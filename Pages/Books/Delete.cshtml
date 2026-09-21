@@ -1,0 +1,42 @@
+﻿@page "{id:int}"
+@model Books.Pages.Books.DeleteModel
+
+@{
+    ViewData["Title"] = $"Удаление: {Model.Book?.Title}";
+}
+
+<h1>Удалить книгу</h1>
+
+<div class="alert alert-warning">
+    <strong>Внимание!</strong> Вы уверены, что хотите удалить книгу "<strong>@Model.Book?.Title</strong>"?
+    <br/><br/>
+    Это действие нельзя отменить.
+</div>
+
+@if (Model.Book != null)
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Автор:</dt>
+                <dd class="col-sm-9">@Model.Book.Author</dd>
+
+                <dt class="col-sm-3">Год:</dt>
+                <dd class="col-sm-9">@Model.Book.PublicationYear</dd>
+
+                <dt class="col-sm-3">ISBN:</dt>
+                <dd class="col-sm-9">@(Model.Book.Isbn ?? "—")</dd>
+            </dl>
+        </div>
+    </div>
+}
+
+<form method="post">
+     <div asp-validation-summary="All" class="text-danger"></div>
+    <input type="hidden" asp-for="Book.Id" />
+    
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger">Удалить</button>
+        <a asp-page="Details" asp-route-id="@Model.Book?.Id" class="btn btn-secondary">Отмена</a>
+    </div>
+</form>

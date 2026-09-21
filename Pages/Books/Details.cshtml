@@ -1,0 +1,76 @@
+﻿@page "{id:int}"
+@model Books.Pages.Books.DetailsModel
+@{
+    ViewData["Title"] = Model.Book?.Title ?? "Книга";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <h1>@Model.Book?.Title</h1>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Информация о книге</strong>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Автор:</dt>
+                    <dd class="col-sm-8">@Model.Book?.Author</dd>
+
+                    <dt class="col-sm-4">Год издания:</dt>
+                    <dd class="col-sm-8">@Model.Book?.PublicationYear</dd>
+
+                    <dt class="col-sm-4">ISBN:</dt>
+                    <dd class="col-sm-8">@(Model.Book?.Isbn ?? "—")</dd>
+
+                    <dt class="col-sm-4">Издатель:</dt>
+                    <dd class="col-sm-8">@(Model.Book?.Publisher ?? "—")</dd>
+
+                    <dt class="col-sm-4">Описание:</dt>
+                    <dd class="col-sm-8">@Model.Book?.Description</dd>
+
+                    <dt class="col-sm-4">Создана:</dt>
+                    <dd class="col-sm-8">@Model.Book?.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+
+                    <dt class="col-sm-4">Обновлена:</dt>
+                    <dd class="col-sm-8">@Model.Book?.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="d-flex gap-2 mb-4">
+            <a asp-page="Edit" asp-route-id="@Model.Book?.Id" class="btn btn-warning">✏️ Редактировать</a>
+            <a asp-page="Delete" asp-route-id="@Model.Book?.Id" class="btn btn-danger">🗑 Удалить</a>
+            <a asp-page="Index" class="btn btn-secondary">← К списку</a>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Оглавление книги -->
+        <div class="card">
+            <div class="card-header">
+                <strong> Оглавление</strong>
+            </div>
+            <div class="card-body">
+                @if (Model.Chapters.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var chapter in Model.Chapters)
+                        {
+                            <li class="list-group-item">
+                                <strong>@chapter.Number.</strong> @chapter.Title
+                                <br/>
+                                <small class="text-muted">с. @chapter.StartPage–@chapter.EndPage</small>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <em class="text-muted">Оглавление отсутствует</em>
+                }
+            </div>
+        </div>
+    </div>
+</div>
