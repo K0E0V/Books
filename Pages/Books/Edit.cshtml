@@ -4,88 +4,106 @@
     ViewData["Title"] = $"Редактирование: {Model.Book.Title}";
 }
 
-<h1>Редактировать книгу</h1>
+<h1 class="h4 mb-3">Редактирование книги</h1>
 
-<form method="post">@* 
+<form method="post">
     <input type="hidden" asp-for="Book.Id" />
- *@
-<div class="card mb-3">
-    <div class="card-header"><strong>Реквизиты книги</strong></div>
-    <div class="card-body">
-        <input type="hidden" asp-for="Book.Id" />
-        <div class="mb-3">
-            <label asp-for="Book.Title" class="form-label small">Название *</label>
-            <input asp-for="Book.Title" class="form-control form-control-sm" required />
-            <span asp-validation-for="Book.Title" class="text-danger"></span>
+    
+    <div class="row">
+        <!-- Левая колонка: Реквизиты книги -->
+        <div class="col-lg-8 mb-3">
+            <div class="card">
+                <div class="card-header"><strong>Реквизиты книги</strong></div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <label asp-for="Book.Title" class="col-sm-4 col-form-label">Название *</label>
+                        <div class="col-sm-8">
+                            <input asp-for="Book.Title" class="form-control" required />
+                            <span asp-validation-for="Book.Title" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Book.Author" class="col-sm-4 col-form-label">Автор *</label>
+                        <div class="col-sm-8">
+                            <input asp-for="Book.Author" class="form-control" required />
+                            <span asp-validation-for="Book.Author" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Book.PublicationYear" class="col-sm-4 col-form-label">Год издания *</label>
+                        <div class="col-sm-8">
+                            <input asp-for="Book.PublicationYear" type="number" class="form-control"
+                                   min="1000" max="2100" required />
+                            <span asp-validation-for="Book.PublicationYear" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Book.Isbn" class="col-sm-4 col-form-label">ISBN</label>
+                        <div class="col-sm-8">
+                            <input asp-for="Book.Isbn" class="form-control" />
+                            <span asp-validation-for="Book.Isbn" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Book.Publisher" class="col-sm-4 col-form-label">Издатель</label>
+                        <div class="col-sm-8">
+                            <input asp-for="Book.Publisher" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <label asp-for="Book.Description" class="col-sm-4 col-form-label">Описание</label>
+                        <div class="col-sm-8">
+                            <textarea asp-for="Book.Description" rows="3" class="form-control"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label asp-for="Book.Author" class="form-label small">Автор *</label>
-            <input asp-for="Book.Author" class="form-control form-control-sm" required />
-            <span asp-validation-for="Book.Author" class="text-danger"></span>
-        </div>
-        <div class="mb-3">
-            <label asp-for="Book.PublicationYear" class="form-label small">Год издания *</label>
-            <input asp-for="Book.PublicationYear" type="number" class="form-control form-control-sm"
-                   min="1000" max="2100" required />
-            <span asp-validation-for="Book.PublicationYear" class="text-danger"></span>
-        </div>
-        <div class="mb-3">
-            <label asp-for="Book.Isbn" class="form-label small">ISBN</label>
-            <input asp-for="Book.Isbn" class="form-control form-control-sm" />
-            <span asp-validation-for="Book.Isbn" class="text-danger"></span>
-        </div>
-        <div class="mb-3">
-            <label asp-for="Book.Publisher" class="form-label small">Издатель</label>
-            <input asp-for="Book.Publisher" class="form-control form-control-sm" />
-        </div>
-        <div class="mb-3">
-            <label asp-for="Book.Description" class="form-label small">Описание</label>
-            <textarea asp-for="Book.Description" rows="3" class="form-control form-control-sm"></textarea>
+
+        <!-- Правая колонка: Оглавление -->
+        <div class="col-lg-4 mb-3">
+            <div class="card">
+                <div class="card-header py-2"><strong class="small">Оглавление</strong></div>
+                <div class="card-body p-2" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-bordered table-sm small mb-2">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">№</th>
+                                <th style="width: 45%;">Название</th>
+                                <th style="width: 15%;">С</th>
+                                <th style="width: 15%;">По</th>
+                                <th style="width: 20%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.Chapters.Count; i++)
+                            {
+                                <tr>
+                                    <td class="align-middle">@(i + 1)</td>
+                                    <td><input asp-for="Chapters[i].Title" class="form-control form-control-sm" /></td>
+                                    <td><input asp-for="Chapters[i].StartPage" type="number" class="form-control form-control-sm" /></td>
+                                    <td><input asp-for="Chapters[i].EndPage" type="number" class="form-control form-control-sm" /></td>
+                                    <td>
+                                        <button type="submit" asp-page-handler="RemoveChapter"
+                                                asp-route-index="@i" class="btn btn-sm btn-danger">×</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    
+                    <button type="submit" asp-page-handler="AddChapter" class="btn btn-sm btn-primary w-100">
+                        + Добавить главу
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-
-
-    <!-- Таблица глав -->
-    <div class="card mb-3">
-        <div class="card-header py-2"><strong class="small">Оглавление</strong></div>
-        <div class="card-body p-2">
-            <table class="table table-bordered table-sm small" style="font-size: 0.85rem;">
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">№</th>
-                        <th style="width: 45%;">Название</th>
-                        <th style="width: 15%;">Стр. с</th>
-                        <th style="width: 15%;">Стр. по</th>
-                        <th style="width: 20%;">Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (int i = 0; i < Model.Chapters.Count; i++)
-                    {
-                        <tr>
-                            <td class="align-middle">@(i + 1)</td>
-                            <td><input asp-for="Chapters[i].Title" class="form-control form-control-sm" /></td>
-                            <td><input asp-for="Chapters[i].StartPage" type="number" class="form-control form-control-sm" /></td>
-                            <td><input asp-for="Chapters[i].EndPage" type="number" class="form-control form-control-sm" /></td>
-                            <td>
-                                <button type="submit" asp-page-handler="RemoveChapter"
-                                asp-route-index="@i" class="btn btn-sm btn-danger btn-sm">Удалить</button>
-                            </td>
-                        </tr>            
-                    }
-                </tbody>
-            </table>
-            
-            <button type="submit" asp-page-handler="AddChapter" class="btn btn-sm btn-primary">
-                + Добавить главу
-            </button>
-        </div>
+    <div class="d-flex gap-2">
+        <button type="submit" asp-page-handler="Save" class="btn btn-primary">
+            Сохранить книгу
+        </button>
+        <a asp-page="Details" asp-route-id="@Model.Book.Id" class="btn btn-secondary">Отмена</a>
     </div>
-
-    <button type="submit" asp-page-handler="Save" class="btn btn-primary">
-        Сохранить книгу
-    </button>
-    <a asp-page="Details" asp-route-id="@Model.Book.Id" class="btn btn-secondary">Отмена</a>
 </form>
