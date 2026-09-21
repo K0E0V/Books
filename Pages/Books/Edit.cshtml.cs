@@ -86,21 +86,13 @@ public class EditModel : PageModel
         if (!string.IsNullOrEmpty(validationError))
         {
             ModelState.AddModelError(string.Empty, validationError);
-            // Перезагружаем данные для корректного отображения формы
-            var (book, chapters) = await _repo.GetByIdWithChaptersAsync(Book.Id);
-            if (book == null) return NotFound();
-            Book = book;
-            Chapters = chapters;
+            // НЕ перезагружаем данные из БД, чтобы сохранить введенные пользователем значения
             return Page();
         }
 
         if (!ModelState.IsValid)
         {
-            // Перезагружаем данные для корректного отображения формы
-            var (book, chapters) = await _repo.GetByIdWithChaptersAsync(Book.Id);
-            if (book == null) return NotFound();
-            Book = book;
-            Chapters = chapters;
+            // НЕ перезагружаем данные из БД, чтобы сохранить введенные пользователем значения и показать ошибки валидации
             return Page();
         }
 
@@ -120,7 +112,7 @@ public class EditModel : PageModel
                 throw new InvalidOperationException($"Неожиданный код {(byte)code} от spBooksUpdate");
         }
 
-        // Перезагружаем данные при ошибке
+        // Перезагружаем данные при ошибке бизнес-логики (Duplicate/NotFound), так как там могли измениться данные в БД или запись удалена
         var (reloadBook, reloadChapters) = await _repo.GetByIdWithChaptersAsync(Book.Id);
         if (reloadBook == null) return NotFound();
         Book = reloadBook;
