@@ -35,24 +35,18 @@
                 <th>Год</th>
                 <th>ISBN</th>
                 <th>Издатель</th>
-                <th style="width: 200px;">Действия</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var book in Model.Books)
             {
-                <tr>
+                <tr style="cursor: pointer;" onclick="window.location.href='@Url.Page("Details", new { id = book.Id })'">
                     <td>@book.Id</td>
                     <td>@book.Title</td>
                     <td>@book.Author</td>
                     <td>@book.PublicationYear</td>
                     <td>@(book.Isbn ?? "—")</td>
                     <td>@(book.Publisher ?? "—")</td>
-                    <td>
-                        <a asp-page="Details" asp-route-id="@book.Id" class="btn btn-sm btn-outline-info">👁</a>
-                        <a asp-page="Edit" asp-route-id="@book.Id" class="btn btn-sm btn-outline-warning">✏️</a>
-                        <a asp-page="Delete" asp-route-id="@book.Id" class="btn btn-sm btn-outline-danger">🗑</a>
-                    </td>
                 </tr>
             }
         </tbody>

@@ -5,60 +5,67 @@
 }
 
 <div class="row">
-    <div class="col-md-8">
-        <h1>@Model.Book?.Title</h1>
+    <!-- Левая часть: Информация о книге -->
+    <div class="col-lg-8 mb-3">
+        <h1 class="h3 mb-3">@Model.Book?.Title</h1>
 
-        <div class="card mb-3">
-            <div class="card-header">
-                <strong>Информация о книге</strong>
-            </div>
+        <!-- Контролы для мобильных: Редактировать/Удалить + переключатель содержания -->
+        <div class="d-lg-none mb-3 d-flex gap-2 flex-wrap">
+            <a asp-page="Edit" asp-route-id="@Model.Book?.Id" class="btn btn-warning btn-sm">✏️ Редактировать</a>
+            <a asp-page="Delete" asp-route-id="@Model.Book?.Id" class="btn btn-danger btn-sm">🗑 Удалить</a>
+            <button type="button" class="btn btn-info btn-sm" data-bs-toggle="collapse" data-bs-target="#mobileContents">
+                📖 Оглавление
+            </button>
+        </div>
+
+        <!-- Карточка с реквизитами - компактная горизонтальная форма -->
+        <div class="card">
             <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">Автор:</dt>
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-4 col-form-label">Автор:</dt>
                     <dd class="col-sm-8">@Model.Book?.Author</dd>
 
-                    <dt class="col-sm-4">Год издания:</dt>
+                    <dt class="col-sm-4 col-form-label">Год издания:</dt>
                     <dd class="col-sm-8">@Model.Book?.PublicationYear</dd>
 
-                    <dt class="col-sm-4">ISBN:</dt>
+                    <dt class="col-sm-4 col-form-label">ISBN:</dt>
                     <dd class="col-sm-8">@(Model.Book?.Isbn ?? "—")</dd>
 
-                    <dt class="col-sm-4">Издатель:</dt>
+                    <dt class="col-sm-4 col-form-label">Издатель:</dt>
                     <dd class="col-sm-8">@(Model.Book?.Publisher ?? "—")</dd>
 
-                    <dt class="col-sm-4">Описание:</dt>
+                    <dt class="col-sm-4 col-form-label">Описание:</dt>
                     <dd class="col-sm-8">@Model.Book?.Description</dd>
 
-                    <dt class="col-sm-4">Создана:</dt>
-                    <dd class="col-sm-8">@Model.Book?.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+                    <dt class="col-sm-4 col-form-label">Создана:</dt>
+                    <dd class="col-sm-8 small text-muted">@Model.Book?.CreatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
 
-                    <dt class="col-sm-4">Обновлена:</dt>
-                    <dd class="col-sm-8">@Model.Book?.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
+                    <dt class="col-sm-4 col-form-label">Обновлена:</dt>
+                    <dd class="col-sm-8 small text-muted">@Model.Book?.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</dd>
                 </dl>
             </div>
         </div>
 
-        <!-- Кнопки действий -->
-        <div class="d-flex gap-2 mb-4">
+        <!-- Кнопки действий для ПК (скрыты на мобильных) -->
+        <div class="d-none d-lg-flex gap-2 mt-3">
             <a asp-page="Edit" asp-route-id="@Model.Book?.Id" class="btn btn-warning">✏️ Редактировать</a>
             <a asp-page="Delete" asp-route-id="@Model.Book?.Id" class="btn btn-danger">🗑 Удалить</a>
-            <a asp-page="Index" class="btn btn-secondary">← К списку</a>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <!-- Оглавление книги -->
-        <div class="card">
+    <!-- Правая часть: Оглавление (видимо только на ПК, на мобильных - collapse) -->
+    <div class="col-lg-4">
+        <div class="card d-none d-lg-block">
             <div class="card-header">
-                <strong> Оглавление</strong>
+                <strong>📖 Оглавление</strong>
             </div>
-            <div class="card-body">
+            <div class="card-body p-2" style="max-height: 500px; overflow-y: auto;">
                 @if (Model.Chapters.Any())
                 {
-                    <ul class="list-group list-group-flush">
+                    <ul class="list-group list-group-flush small">
                         @foreach (var chapter in Model.Chapters)
                         {
-                            <li class="list-group-item">
+                            <li class="list-group-item px-0 py-1">
                                 <strong>@chapter.Number.</strong> @chapter.Title
                                 <br/>
                                 <small class="text-muted">с. @chapter.StartPage–@chapter.EndPage</small>
@@ -68,8 +75,36 @@
                 }
                 else
                 {
-                    <em class="text-muted">Оглавление отсутствует</em>
+                    <em class="text-muted small">Оглавление отсутствует</em>
                 }
+            </div>
+        </div>
+
+        <!-- Мобильная версия оглавления (collapse) -->
+        <div class="collapse d-lg-none" id="mobileContents">
+            <div class="card">
+                <div class="card-header">
+                    <strong>📖 Оглавление</strong>
+                </div>
+                <div class="card-body p-2">
+                    @if (Model.Chapters.Any())
+                    {
+                        <ul class="list-group list-group-flush small">
+                            @foreach (var chapter in Model.Chapters)
+                            {
+                                <li class="list-group-item px-0 py-1">
+                                    <strong>@chapter.Number.</strong> @chapter.Title
+                                    <br/>
+                                    <small class="text-muted">с. @chapter.StartPage–@chapter.EndPage</small>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <em class="text-muted small">Оглавление отсутствует</em>
+                    }
+                </div>
             </div>
         </div>
     </div>
