@@ -41,7 +41,7 @@ public class EditModel : PageModel
         {
             Number = (short)(Chapters.Count + 1),
             StartPage = start,
-            EndPage = start
+            EndPage = 0 // Пустое значение для валидации
         });
         return Page();
     }
@@ -55,6 +55,17 @@ public class EditModel : PageModel
 
     private bool ValidateChapterRanges()
     {
+        // Проверяем, что у всех глав заполнен EndPage
+        for (int i = 0; i < Chapters.Count; i++)
+        {
+            if (Chapters[i].EndPage == 0)
+            {
+                ModelState.AddModelError(string.Empty, 
+                    $"У главы {i + 1} не указана конечная страница. Заполните поле EndPage.");
+                return false;
+            }
+        }
+
         var sorted = Chapters.OrderBy(c => c.StartPage).ToList();
         for (int i = 1; i < sorted.Count; i++)
         {
