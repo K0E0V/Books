@@ -33,28 +33,6 @@ public class EditModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostSaveAsync()
-    {
-        if (!ModelState.IsValid) return Page();
-        for (int i = 0; i < Chapters.Count; i++) Chapters[i].Number = (short)(i + 1);
-
-        var code = await _repo.UpdateAsync(Book, Chapters);
-        switch (code)
-        {
-            case OperationCode.Success:
-                return RedirectToPage("Details", new { id = Book.Id });
-            case OperationCode.Duplicate:
-                _logger.LogWarning("Дубль ISBN {Isbn} при обновлении Id={Id}", Book.Isbn, Book.Id);
-                ModelState.AddModelError(nameof(Book.Isbn), "Книга с таким ISBN уже есть.");
-                return Page();
-            case OperationCode.NotFound:
-                ModelState.AddModelError(string.Empty, "Запись не найдена: возможно, она удалена ранее.");
-                return Page();
-            default:
-                throw new InvalidOperationException($"Неожиданный код {(byte)code} от spBooksUpdate");
-        }
-    }
-
     public IActionResult OnPostAddChapter()
     {
         var last = Chapters.LastOrDefault();
@@ -73,5 +51,49 @@ public class EditModel : PageModel
         if (index >= 0 && index < Chapters.Count)
             Chapters.RemoveAt(index);
         return Page();
+    }
+
+    private bool ValidateChapterRanges()
+    {
+        var sorted = Chapters.OrderBy(c => c.StartPage).ToList();
+        for (int i = 1; i < sorted.Count; i++)
+        {
+            if (sorted[i].StartPage <= sorted[i - 1].EndPage)
+            {
+                ModelState.AddModelError(string.Empty, 
+                    $"Диапазоны страниц пересекаются: глава {sorted[i].Number} начинается на странице {sorted[i].StartPage}, " +
+                    $"но предыдущая глава заканчивается на {sorted[i - 1].EndPage}.");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public async Task<IActionResult> OnPostSaveAsync()
+    {
+        if (!ModelState.IsValid) return Page();
+        
+        // Нумеруем главы
+        for (int i = 0; i < Chapters.Count; i++) 
+            Chapters[i].Number = (short)(i + 1);
+        
+        // Проверяем пересечение диапазонов
+        if (!ValidateChapterRanges()) return Page();
+
+        var code = await _repo.UpdateAsync(Book, Chapters);
+        switch (code)
+        {
+            case OperationCode.Success:
+                return RedirectToPage("Details", new { id = Book.Id });
+            case OperationCode.Duplicate:
+                _logger.LogWarning("Дубль ISBN {Isbn} при обновлении Id={Id}", Book.Isbn, Book.Id);
+                ModelState.AddModelError(nameof(Book.Isbn), "Книга с таким ISBN уже есть.");
+                return Page();
+            case OperationCode.NotFound:
+                ModelState.AddModelError(string.Empty, "Запись не найдена: возможно, она удалена ранее.");
+                return Page();
+            default:
+                throw new InvalidOperationException($"Неожиданный код {(byte)code} от spBooksUpdate");
+        }
     }
 }
