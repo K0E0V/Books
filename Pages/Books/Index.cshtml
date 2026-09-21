@@ -4,7 +4,7 @@
     ViewData["Title"] = "Список книг";
 }
 
-<h1>Каталог книг</h1>
+<h1 class="h3">Каталог книг</h1>
 
 <!-- Форма поиска -->
 <form method="get" class="mb-3">
@@ -40,7 +40,10 @@
         <tbody>
             @foreach (var book in Model.Books)
             {
-                <tr style="cursor: pointer;" onclick="window.location.href='@Url.Page("Details", new { id = book.Id })'">
+                <tr style="cursor: pointer;" 
+                    onmouseover="this.classList.add('table-active')" 
+                    onmouseout="this.classList.remove('table-active')"
+                    onclick="window.location.href='@Url.Page("Details", new { id = book.Id })'">
                     <td>@book.Id</td>
                     <td>@book.Title</td>
                     <td>@book.Author</td>

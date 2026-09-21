@@ -32,13 +32,19 @@ public class DeleteModel : PageModel
         switch (code)
         {
             case OperationCode.Success:
+                TempData["SuccessMessage"] = "Книга успешно удалена.";
                 return RedirectToPage("Index");                       // PRG
             case OperationCode.Duplicate:                             // FK: на книгу есть ссылки
                 ModelState.AddModelError(string.Empty,
                     "Книгу нельзя удалить: на неё ссылаются другие записи.");
+                // Перезагружаем данные для отображения страницы подтверждения снова
+                var (book, _) = await _repo.GetByIdWithChaptersAsync(id);
+                Book = book;
                 return Page();
             case OperationCode.NotFound:
-                return NotFound();                                    // удалена ранее — честный 404
+                // Книга уже удалена или не найдена — редирект на список с сообщением
+                TempData["ErrorMessage"] = "Книга не найдена: возможно, она уже была удалена.";
+                return RedirectToPage("Index");
             default:
                 throw new InvalidOperationException(
                     $"Неожиданный код {(byte)code} от spBooksDelete");
