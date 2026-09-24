@@ -149,12 +149,14 @@ public class BookRepository
         return (books, totalCount);
     }
 
-    // Статистика для /About: «длина полки» и «вес полки» считаются по сумме CountPages
-    public async Task<long> GetTotalPageCountAsync()
+    // Статистика для /About: количество книг и суммарная длина полки по CountPages
+    public async Task<(int BookCount, long TotalPages)> GetAboutStatsAsync()
     {
         using var connection = new SqlConnection(_connectionString);
-        return await connection.ExecuteScalarAsync<long>(
-            "SELECT ISNULL(SUM(COUNT), 0) FROM (SELECT CAST(CountPages AS BIGINT) AS COUNT FROM dbo.TblBooks) t");
+        return await connection.QueryFirstAsync<(int BookCount, long TotalPages)>(@"
+            SELECT COUNT(*)                    AS BookCount,
+                   ISNULL(SUM(CountPages), 0)  AS TotalPages
+            FROM dbo.tblBooks");
     }
 
     // ===== СПРАВОЧНИКИ =====
@@ -177,7 +179,7 @@ public class BookRepository
     {
         using var connection = new SqlConnection(_connectionString);
         return (await connection.QueryAsync<RefItem>(
-            "SELECT Id, Name FROM dbo.TblBookTypes ORDER BY Name")).ToList();
+            "SELECT Id, Name FROM dbo.TblTypes ORDER BY Name")).ToList();
     }
 
     // Названия жанров/типов для отображения в Details (текстовые списки)
@@ -192,9 +194,9 @@ public class BookRepository
             ORDER BY g.Name", new { BookId = bookId })).ToList();
         var types = (await connection.QueryAsync<string>(@"
             SELECT t.Name
-            FROM dbo.TblBookTypes2Books tt
-            JOIN dbo.TblBookTypes t ON t.Id = tt.BookTypeId
-            WHERE tt.BookId = @BookId
+            FROM dbo.TblBookTypes bt
+            JOIN dbo.TblTypes t ON t.Id = bt.TypeId
+            WHERE bt.BookId = @BookId
             ORDER BY t.Name", new { BookId = bookId })).ToList();
         return (genres, types);
     }
@@ -208,7 +210,7 @@ public class BookRepository
             "SELECT GenreId FROM dbo.TblBookGenres WHERE BookId = @BookId",
             new { BookId = bookId })).ToList();
         var typeIds = (await connection.QueryAsync<int>(
-            "SELECT BookTypeId FROM dbo.TblBookTypes2Books WHERE BookId = @BookId",
+            "SELECT TypeId FROM dbo.TblBookTypes WHERE BookId = @BookId",
             new { BookId = bookId })).ToList();
         return (genreIds, typeIds);
     }
@@ -245,12 +247,12 @@ public class BookRepository
 
         // Типы книг: аналогично.
         await connection.ExecuteAsync(
-            "DELETE FROM dbo.TblBookTypes2Books WHERE BookId = @BookId;", new { BookId = bookId });
+            "DELETE FROM dbo.TblBookTypes WHERE BookId = @BookId;", new { BookId = bookId });
         foreach (var tid in (bookTypeIds ?? new List<int>()).Distinct())
         {
             await connection.ExecuteAsync(
-                "INSERT INTO dbo.TblBookTypes2Books (BookId, BookTypeId) VALUES (@BookId, @BookTypeId);",
-                new { BookId = bookId, BookTypeId = tid });
+                "INSERT INTO dbo.TblBookTypes (BookId, TypeId) VALUES (@BookId, @TypeId);",
+                new { BookId = bookId, TypeId = tid });
         }
     }
 
