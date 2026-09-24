@@ -1,0 +1,51 @@
+﻿@page
+@model Books.Pages.AboutModel
+@{
+    ViewData["Title"] = "О проекте";
+}
+
+<h1 class="h4 mb-3">О проекте</h1>
+
+<div class="card mb-3">
+    <div class="card-header block-header">
+        <span class="block-title">Домашняя библиотека в цифрах</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 text-center">
+            <div class="col-6 col-lg-3">
+                <div class="border rounded-3 p-3 h-100 bg-light">
+                    <div class="fs-2 fw-semibold text-primary">@Model.Stats.TotalBooks</div>
+                    <div class="small">книг в каталоге</div>
+                    <div class="text-muted small">за всё время</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="border rounded-3 p-3 h-100 bg-light">
+                    <div class="fs-2 fw-semibold text-success">@Model.Stats.BooksAddedLast24Hours</div>
+                    <div class="small">книг добавлено</div>
+                    <div class="text-muted small">за последние сутки</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="border rounded-3 p-3 h-100 bg-light">
+                    <div class="fs-2 fw-semibold text-info">@Model.ShelfLengthLabel</div>
+                    <div class="small">длина полки</div>
+                    <div class="text-muted small">корешок к корешку</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="border rounded-3 p-3 h-100 bg-light">
+                    <div class="fs-2 fw-semibold text-warning">@Model.ShelfWeightLabel</div>
+                    <div class="small">вес полки</div>
+                    <div class="text-muted small">бумага и переплёты</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted small">
+    Длина и вес — оценка по суммарному объёму оглавлений:
+    страница занимает около 0,12 мм корешка и весит около 2 г,
+    плюс переплёт каждой книги. Цифры пересчитываются при каждом открытии страницы.
+</p>

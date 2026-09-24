@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Books.Data;
 using Books.Models;
+using Books.Validation;
+
 
 namespace Books.Pages.Books;
 
@@ -9,14 +11,20 @@ public class EditModel : PageModel
 {
     private readonly BookRepository _repo;
     private readonly ILogger<EditModel> _logger;
+    private readonly IBookEditValidator _validator;
 
-    public EditModel(BookRepository repo, ILogger<EditModel> logger)
+    public EditModel(
+        BookRepository repo,
+        ILogger<EditModel> logger,
+        IBookEditValidator validator)
     {
         _repo = repo;
         _logger = logger;
+        _validator = validator;
     }
 
     [BindProperty]
+
     public Book Book { get; set; } = new();
 
     [BindProperty]
@@ -52,71 +60,69 @@ public class EditModel : PageModel
             Chapters.RemoveAt(index);
         return Page();
     }
-
-    private string? ValidateChapterRanges()
-    {
-        // Проверяем, что у всех глав заполнен EndPage
-        for (int i = 0; i < Chapters.Count; i++)
-        {
-            if (Chapters[i].EndPage == 0)
-            {
-                return $"У главы \"{Chapters[i].Title}\" не указана конечная страница. Заполните поле.";
-            }
-        }
-
-        var sorted = Chapters.OrderBy(c => c.StartPage).ToList();
-        for (int i = 1; i < sorted.Count; i++)
-        {
-            if (sorted[i].StartPage <= sorted[i - 1].EndPage)
-            {
-                return $"Диапазоны страниц пересекаются: глава \"{sorted[i].Title}\" (стр. {sorted[i].StartPage}) начинается раньше, чем заканчивается предыдущая глава \"{sorted[i - 1].Title}\" (стр. {sorted[i - 1].EndPage}).";
-            }
-        }
-        return null;
-    }
-
     public async Task<IActionResult> OnPostSaveAsync()
     {
         // Нумеруем главы
-        for (int i = 0; i < Chapters.Count; i++) 
+        for (int i = 0; i < Chapters.Count; i++)
             Chapters[i].Number = (short)(i + 1);
-        
-        // Проверяем валидацию диапазонов
-        var validationError = ValidateChapterRanges();
-        if (!string.IsNullOrEmpty(validationError))
-        {
-            ModelState.AddModelError(string.Empty, validationError);
-            // НЕ перезагружаем данные из БД, чтобы сохранить введенные пользователем значения
-            return Page();
-        }
 
+        // 1. Человечные сообщения для ошибок привязки
+        ModelState.HumanizeNumericBindingErrors();
+
+        // 2. Бизнес-валидация: обязательность, ISBN, диапазоны, пересечения
+        var validation = _validator.Validate(Book, Chapters);
+
+        // 3. Перекладываем ошибки в ModelState
+        validation.AddToModelState(ModelState);
+
+        // 4. СТОП-КРАН: стоит ПОСЛЕ сбора всех ошибок и ДО сохранения
         if (!ModelState.IsValid)
         {
-            // НЕ перезагружаем данные из БД, чтобы сохранить введенные пользователем значения и показать ошибки валидации
             return Page();
         }
 
-        var code = await _repo.UpdateAsync(Book, Chapters);
+        // 5. Сохранение — только для прошедших проверку данных
+        var (dbBook, _) = await _repo.GetByIdWithChaptersAsync(Book.Id);
+        if (dbBook == null)
+        {
+            ModelState.AddModelError(string.Empty, "Запись не найдена: возможно, она удалена ранее.");
+            return Page();
+        }
+
+        dbBook.Title = Book.Title;
+        dbBook.Author = Book.Author;
+        dbBook.PublicationYear = Book.PublicationYear;
+        dbBook.Isbn = Book.Isbn;
+        dbBook.Publisher = Book.Publisher;
+        dbBook.Description = Book.Description;
+
+        var code = await _repo.UpdateAsync(dbBook, Chapters);
+
         switch (code)
         {
             case OperationCode.Success:
-                return RedirectToPage("Details", new { id = Book.Id });
+                return RedirectToPage("Details", new { id = dbBook.Id });
+
             case OperationCode.Duplicate:
-                _logger.LogWarning("Дубль ISBN {Isbn} при обновлении Id={Id}", Book.Isbn, Book.Id);
+                _logger.LogWarning("Дубль ISBN {Isbn} при обновлении Id={Id}", dbBook.Isbn, dbBook.Id);
                 ModelState.AddModelError(nameof(Book.Isbn), "Книга с таким ISBN уже есть.");
                 break;
+
             case OperationCode.NotFound:
                 ModelState.AddModelError(string.Empty, "Запись не найдена: возможно, она удалена ранее.");
                 break;
+
             default:
                 throw new InvalidOperationException($"Неожиданный код {(byte)code} от spBooksUpdate");
         }
 
-        // Перезагружаем данные при ошибке бизнес-логики (Duplicate/NotFound), так как там могли измениться данные в БД или запись удалена
         var (reloadBook, reloadChapters) = await _repo.GetByIdWithChaptersAsync(Book.Id);
-        if (reloadBook == null) return NotFound();
+        if (reloadBook == null)
+            return NotFound();
+
         Book = reloadBook;
         Chapters = reloadChapters;
         return Page();
     }
+
 }

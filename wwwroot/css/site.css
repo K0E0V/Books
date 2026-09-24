@@ -20,3 +20,33 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.block-header {
+    padding: .5rem .75rem;
+}
+
+    .block-header .block-title {
+        display: block;
+        margin: 0;
+        font-size: .95rem;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+@media (min-width: 992px) {
+    .tab-content.blocks-tabs {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .blocks-tabs > .tab-pane {
+        display: block;
+        opacity: 1;
+        flex: 1 1 0;
+    }
+
+        .blocks-tabs > .tab-pane.pane-wide {
+            flex: 2 1 0;
+        }
+}

@@ -4,22 +4,34 @@
     ViewData["Title"] = Model.Book?.Title ?? "Книга";
 }
 
-<div class="row">
-    <!-- Левая часть: Информация о книге -->
-    <div class="col-lg-8 mb-3">
-        <h1 class="h4 mb-3">@Model.Book?.Title</h1>
+<link rel="stylesheet" href="~/css/book-form.css" asp-append-version="true" />
 
-        <!-- Контролы для мобильных: Редактировать/Удалить + переключатель содержания -->
-        <div class="d-lg-none mb-3 d-flex gap-2 flex-wrap">
-            <a asp-page="Edit" asp-route-id="@Model.Book?.Id" class="btn btn-warning btn-sm">✏️ Редактировать</a>
-            <a asp-page="Delete" asp-route-id="@Model.Book?.Id" class="btn btn-danger btn-sm">🗑 Удалить</a>
-            <button type="button" class="btn btn-info btn-sm" data-bs-toggle="collapse" data-bs-target="#mobileContents">
-                📖 Оглавление
-            </button>
-        </div>
+<h1 class="h4 mb-3">@Model.Book?.Title</h1>
 
-        <!-- Карточка с реквизитами - компактная горизонтальная форма -->
-        <div class="card">
+<!-- Закладки: видны только на мобильных. На десктопе обе панели рядом -->
+<ul class="nav nav-tabs d-lg-none mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" type="button" role="tab"
+                data-bs-toggle="tab" data-bs-target="#pane-requisites">
+            Реквизиты
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" type="button" role="tab"
+                data-bs-toggle="tab" data-bs-target="#pane-contents">
+            Оглавление
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content blocks-tabs">
+
+    <!-- Панель: Реквизиты книги -->
+    <div class="tab-pane fade show active pane-wide" id="pane-requisites" role="tabpanel">
+        <div class="card mb-3">
+            <div class="card-header block-header">
+                <span class="block-title">Реквизиты книги</span>
+            </div>
             <div class="card-body py-2">
                 <dl class="row mb-0 small" style="font-size: 0.85rem;">
                     <dt class="col-sm-4 col-form-label py-1">Автор:</dt>
@@ -45,19 +57,13 @@
                 </dl>
             </div>
         </div>
-
-        <!-- Кнопки действий для ПК (скрыты на мобильных) -->
-        <div class="d-none d-lg-flex gap-2 mt-3">
-            <a asp-page="Edit" asp-route-id="@Model.Book?.Id" class="btn btn-warning btn-sm">✏️ Редактировать</a>
-            <a asp-page="Delete" asp-route-id="@Model.Book?.Id" class="btn btn-danger btn-sm">🗑 Удалить</a>
-        </div>
     </div>
 
-    <!-- Правая часть: Оглавление (видимо только на ПК, на мобильных - collapse) -->
-    <div class="col-lg-4">
-        <div class="card d-none d-lg-block">
-            <div class="card-header py-2">
-                <strong class="small">📖 Оглавление</strong>
+    <!-- Панель: Оглавление -->
+    <div class="tab-pane fade" id="pane-contents" role="tabpanel">
+        <div class="card mb-3">
+            <div class="card-header block-header">
+                <span class="block-title">Оглавление</span>
             </div>
             <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
                 @if (Model.Chapters.Any())
@@ -67,7 +73,7 @@
                         {
                             <li class="list-group-item px-2 py-1 border-0">
                                 <strong>@chapter.Number.</strong> @chapter.Title
-                                <br/>
+                                <br />
                                 <small class="text-muted">с. @chapter.StartPage–@chapter.EndPage</small>
                             </li>
                         }
@@ -79,33 +85,12 @@
                 }
             </div>
         </div>
-
-        <!-- Мобильная версия оглавления (collapse) -->
-        <div class="collapse d-lg-none" id="mobileContents">
-            <div class="card">
-                <div class="card-header py-2">
-                    <strong class="small">📖 Оглавление</strong>
-                </div>
-                <div class="card-body p-2">
-                    @if (Model.Chapters.Any())
-                    {
-                        <ul class="list-group list-group-flush small" style="font-size: 0.85rem;">
-                            @foreach (var chapter in Model.Chapters)
-                            {
-                                <li class="list-group-item px-2 py-1 border-0">
-                                    <strong>@chapter.Number.</strong> @chapter.Title
-                                    <br/>
-                                    <small class="text-muted">с. @chapter.StartPage–@chapter.EndPage</small>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <em class="text-muted small">Оглавление отсутствует</em>
-                    }
-                </div>
-            </div>
-        </div>
     </div>
+
+</div>
+
+<!-- Кнопки действий: один комплект на все размеры экрана -->
+<div class="d-flex gap-2 mt-3">
+    <a asp-page="Edit" asp-route-id="@Model.Book?.Id" class="btn btn-warning btn-sm">✏️ Редактировать</a>
+    <a asp-page="Delete" asp-route-id="@Model.Book?.Id" class="btn btn-danger btn-sm">🗑 Удалить</a>
 </div>

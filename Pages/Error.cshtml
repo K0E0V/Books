@@ -1,95 +1,29 @@
-﻿@page "{id:int}"
-@model Books.Pages.Books.EditModel
+﻿@page
+@model Books.Pages.ErrorModel
 @{
-    ViewData["Title"] = $"Редактирование: {Model.Book.Title}";
+    ViewData["Title"] = "Ошибка";
+    var title = Model.ErrorCode.HasValue
+        ? $"Произошла ошибка (код {Model.ErrorCode})"
+        : "Произошла ошибка";
 }
 
-<h1>Редактировать книгу</h1>
 
-<form method="post">
-    <div asp-validation-summary="All" class="text-danger"></div>
-    <input type="hidden" asp-for="Book.Id" />
 
-    <!-- Реквизиты книги: все поля редактируемы -->
-    <div class="card mb-3">
-        <div class="card-header"><strong>Реквизиты книги</strong></div>
-        <div class="card-body">
-            <div class="mb-3">
-                <label asp-for="Book.Title" class="form-label">Название *</label>
-                <input asp-for="Book.Title" class="form-control" required />
-                <span asp-validation-for="Book.Title" class="text-danger"></span>
-            </div>
-            <div class="mb-3">
-                <label asp-for="Book.Author" class="form-label">Автор *</label>
-                <input asp-for="Book.Author" class="form-control" required />
-                <span asp-validation-for="Book.Author" class="text-danger"></span>
-            </div>
-            <div class="mb-3">
-                <label asp-for="Book.PublicationYear" class="form-label">Год издания *</label>
-                <input asp-for="Book.PublicationYear" type="number" class="form-control"
-                       min="1000" max="2100" required />
-                <span asp-validation-for="Book.PublicationYear" class="text-danger"></span>
-            </div>
-            <div class="mb-3">
-                <label asp-for="Book.Isbn" class="form-label">ISBN</label>
-                <input asp-for="Book.Isbn" class="form-control" />
-                <span asp-validation-for="Book.Isbn" class="text-danger"></span>
-            </div>
-            <div class="mb-3">
-                <label asp-for="Book.Publisher" class="form-label">Издатель</label>
-                <input asp-for="Book.Publisher" class="form-control" />
-            </div>
-            <div class="mb-3">
-                <label asp-for="Book.Description" class="form-label">Описание</label>
-                <textarea asp-for="Book.Description" rows="4" class="form-control"></textarea>
-            </div>
-        </div>
-    </div>
 
-    <!-- Оглавление -->
-    <div class="card mb-3">
-        <div class="card-header"><strong>Оглавление</strong></div>
-        <div class="card-body">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>№</th>
-                        <th>Название</th>
-                        <th>Стр. с</th>
-                        <th>Стр. по</th>
-                        <th>Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (int i = 0; i < Model.Chapters.Count; i++)
-                    {
-                        <tr>
-                            <td>@(i + 1)</td>
-                            <td><input asp-for="Chapters[i].Title" class="form-control" /></td>
-                            <td><input asp-for="Chapters[i].StartPage" type="number" class="form-control" /></td>
-                            <td><input asp-for="Chapters[i].EndPage" type="number" class="form-control" /></td>
-                            <td>
-                                <button type="submit" asp-page-handler="RemoveChapter"
-                                        asp-route-index="@i" class="btn btn-sm btn-danger">Удалить</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-            <button type="submit" asp-page-handler="AddChapter" class="btn btn-sm btn-primary">
-                + Добавить главу
-            </button>
-        </div>
-    </div>
+<div class="container mt-4">
+    <h1 class="text-danger">Произошла ошибка@codeText</h1>
+    <p class="lead">
+        Извините, что-то пошло не так. Подробности записаны в лог.
+    </p>
 
-    <div class="d-flex gap-2">
-        <button type="submit" asp-page-handler="Save" class="btn btn-primary">Сохранить книгу</button>
-        <a asp-page="Details" asp-route-id="@Model.Book.Id" class="btn btn-secondary">Отмена</a>
-    </div>
-</form>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    @if (Model.ShowRequestId)
+    {
+        <p class="text-muted small">
+            Идентификатор запроса: <code>@Model.RequestId</code>
+        </p>
     }
-}
+
+    <a asp-page="/Books/Index" class="btn btn-primary mt-3">
+        Вернуться к списку книг
+    </a>
+</div>

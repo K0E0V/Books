@@ -8,6 +8,7 @@
         public int PublicationYear { get; set; }
         public string? Isbn { get; set; }
         public string? Publisher { get; set; }
+        public int? CounPages { get; set; }
         public string? Description { get; set; }
         public List<Chapter> Chapters { get; set; } = new();
         public DateTime CreatedAt { get; set; }

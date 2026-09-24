@@ -1,0 +1,90 @@
+﻿/* Общая компактная форма книги */
+.book-form .card-body {
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+}
+
+.book-form .form-label,
+.book-form .col-form-label {
+    margin-bottom: .1rem;
+}
+
+
+/* Узкие подписи реквизитов, поля ввода начинаются левее */
+.book-form .req-label {
+    flex: 0 0 8.5rem;
+    max-width: 8.5rem;
+    padding-right: .35rem;
+    padding-left: 0;
+    text-align: left;
+    white-space: nowrap;
+}
+
+
+/* Поля страниц: ширина должна вмещать 4 цифры */
+.book-form .page-number-input {
+    width: 100%;
+    min-width: 4.6rem;
+    text-align: right;
+}
+.book-form .page-number-input { width: 100%; min-width: 4.6rem; text-align: right; }
+/* Номер главы тоже компактно */
+.book-form .chapter-number {
+    width: 5ch;
+    min-width: 3.2rem;
+    text-align: right;
+}
+
+/* Ряды оглавления */
+.book-form .chapter-row {
+    gap: .35rem;
+    margin-bottom: .25rem;
+}
+
+.book-form .chapter-message {
+    margin-top: -.15rem;
+    margin-bottom: .35rem;
+}
+
+/* Мобильная версия: уменьшаем пустые вертикальные отступы */
+@media (max-width: 767.98px) {
+    .book-form .card-body {
+        padding: .45rem;
+    }
+
+    .book-form .req-label {
+        flex: 0 0 6.7rem;
+        max-width: 6.7rem;
+        font-size: .85rem;
+    }
+
+    .book-form .row > * {
+        padding-top: .1rem !important;
+        padding-bottom: .1rem !important;
+    }
+
+    .book-form .form-control-sm,
+    .book-form .form-select-sm {
+        font-size: .9rem;
+    }
+
+    .book-form .chapter-row {
+        gap: .25rem;
+    }
+
+        .book-form .chapter-row .form-control {
+            margin-bottom: .1rem;
+        }
+}
+
+/* Ошибки/подсказки */
+.book-form .field-validation {
+    display: block;
+    min-height: 1rem;
+    font-size: .78rem;
+    color: #dc3545;
+}
+
+.book-form .isbn-warning {
+    font-size: .78rem;
+}

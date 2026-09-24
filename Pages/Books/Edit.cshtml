@@ -4,16 +4,43 @@
     ViewData["Title"] = $"Редактирование: {Model.Book.Title}";
 }
 
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/isbn-mask.js" asp-append-version="true"></script>
+    <script src="~/js/form-scroll.js" asp-append-version="true"></script>
+    <script src="~/js/form-tabs.js" asp-append-version="true"></script>
+}
+
 <h1 class="h4 mb-3">Редактирование книги</h1>
 
-<form method="post">
+<form method="post" id="bookForm" class="book-form" data-keep-scroll>
     <input type="hidden" asp-for="Book.Id" />
-    
-    <div class="row">
-        <!-- Левая колонка: Реквизиты книги -->
-        <div class="col-lg-8 mb-3">
-            <div class="card">
-                <div class="card-header"><strong>Реквизиты книги</strong></div>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger small"></div>
+
+    <!-- Закладки: видны только на мобильных. На десктопе обе панели рядом -->
+    <ul class="nav nav-tabs d-lg-none mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" type="button" role="tab"
+                    data-bs-toggle="tab" data-bs-target="#pane-requisites">
+                Реквизиты
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" type="button" role="tab"
+                    data-bs-toggle="tab" data-bs-target="#pane-contents">
+                Оглавление
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content blocks-tabs">
+
+        <!-- Панель: Реквизиты книги -->
+        <div class="tab-pane fade show active pane-wide" id="pane-requisites" role="tabpanel">
+            <div class="card mb-3">
+                <div class="card-header block-header">
+                    <span class="block-title">Реквизиты книги</span>
+                </div>
                 <div class="card-body">
                     <div class="row mb-3">
                         <label asp-for="Book.Title" class="col-sm-4 col-form-label">Название *</label>
@@ -38,10 +65,19 @@
                         </div>
                     </div>
                     <div class="row mb-3">
-                        <label asp-for="Book.Isbn" class="col-sm-4 col-form-label">ISBN</label>
+                        <label asp-for="Book.Isbn" class="col-sm-4 col-form-label">ISBN *</label>
                         <div class="col-sm-8">
-                            <input asp-for="Book.Isbn" class="form-control" />
+                            <input asp-for="Book.Isbn"
+                                   class="form-control"
+                                   placeholder="000-0-000-00000-0"
+                                   maxlength="17"
+                                   inputmode="numeric"
+                                   data-isbn-mask
+                                   required />
                             <span asp-validation-for="Book.Isbn" class="text-danger"></span>
+                            <small class="form-text text-muted">
+                                13 цифр, дефисы расставляются автоматически.
+                            </small>
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -60,44 +96,61 @@
             </div>
         </div>
 
-        <!-- Правая колонка: Оглавление -->
-        <div class="col-lg-4 mb-3">
-            <div class="card">
-                <div class="card-header py-2"><strong class="small">Оглавление</strong></div>
+        <!-- Панель: Оглавление -->
+        <div class="tab-pane fade" id="pane-contents" role="tabpanel">
+            <div class="card mb-3">
+                <div class="card-header block-header">
+                    <span class="block-title">Оглавление</span>
+                </div>
                 <div class="card-body p-2" style="max-height: 500px; overflow-y: auto;">
-                    <table class="table table-bordered table-sm small mb-2">
-                        <thead>
-                            <tr>
-                                <th style="width: 5%;">№</th>
-                                <th style="width: 45%;">Название</th>
-                                <th style="width: 15%;">С</th>
-                                <th style="width: 15%;">По</th>
-                                <th style="width: 20%;"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (int i = 0; i < Model.Chapters.Count; i++)
-                            {
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm small mb-2">
+                            <thead>
                                 <tr>
-                                    <td class="align-middle">@(i + 1)</td>
-                                    <td><input asp-for="Chapters[i].Title" class="form-control form-control-sm" /></td>
-                                    <td><input asp-for="Chapters[i].StartPage" type="number" class="form-control form-control-sm" /></td>
-                                    <td><input asp-for="Chapters[i].EndPage" type="number" class="form-control form-control-sm" /></td>
-                                    <td>
-                                        <button type="submit" asp-page-handler="RemoveChapter"
-                                                asp-route-index="@i" class="btn btn-sm btn-danger">×</button>
-                                    </td>
+                                    <th style="width: 2rem;">№</th>
+                                    <th>Название</th>
+                                    <th style="width: 5.6rem;">С</th>
+                                    <th style="width: 5.6rem;">По</th>
+                                    <th style="width: 2.5rem;"></th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                    
-                    <button type="submit" asp-page-handler="AddChapter" class="btn btn-sm btn-primary w-100">
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.Chapters.Count; i++)
+                                {
+                                    <tr>
+                                        <td class="align-middle">@(i + 1)</td>
+                                        <td>
+                                            <input asp-for="Chapters[i].Title" class="form-control form-control-sm" />
+                                            <span asp-validation-for="Chapters[i].Title" class="text-danger small"></span>
+                                        </td>
+                                        <td>
+                                            <input asp-for="Chapters[i].StartPage" type="number" min="1"
+                                                   class="form-control form-control-sm page-number-input" />
+                                            <span asp-validation-for="Chapters[i].StartPage" class="text-danger small"></span>
+                                        </td>
+                                        <td>
+                                            <input asp-for="Chapters[i].EndPage" type="number" min="1"
+                                                   class="form-control form-control-sm page-number-input" />
+                                            <span asp-validation-for="Chapters[i].EndPage" class="text-danger small"></span>
+                                        </td>
+                                        <td>
+                                            <button type="submit" asp-page-handler="RemoveChapter" asp-route-index="@i"
+                                                    formnovalidate class="btn btn-sm btn-danger" title="Удалить главу">×</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button type="submit" asp-page-handler="AddChapter" formnovalidate
+                            class="btn btn-sm btn-primary w-100">
                         + Добавить главу
                     </button>
                 </div>
             </div>
         </div>
+
     </div>
 
     <div class="d-flex gap-2">
