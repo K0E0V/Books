@@ -29,6 +29,13 @@ public class BookRepository
         var book = await multi.ReadFirstOrDefaultAsync<Book>();
         var chapters = (await multi.ReadAsync<Chapter>()).ToList();
 
+        if (book != null)
+        {
+            var extras = await GetBookExtrasAsync(connection, book.Id);
+            book.GenreIds = extras.GenreIds;
+            book.BookTypeIds = extras.BookTypeIds;
+        }
+
         return (book, chapters);
     }
 
@@ -44,9 +51,10 @@ public class BookRepository
             book.Title,
             book.Author,
             book.PublicationYear,
-            book.Isbn,          
+            book.Isbn,
             book.Publisher,
             book.Description,
+            book.CountPages, // NOT NULL в dbo.TblBooks — всегда конкретное число
             ContentsXml = GenerateXmlFromChapters(chapters)
         });
 
@@ -76,6 +84,7 @@ public class BookRepository
             book.Isbn,
             book.Publisher,
             book.Description,
+            book.CountPages, // NOT NULL в dbo.TblBooks — всегда конкретное число
             ContentsXml = GenerateXmlFromChapters(chapters)
         });
         parameters.Add("@ResultCode", dbType: DbType.Byte, direction: ParameterDirection.Output);
@@ -138,6 +147,111 @@ public class BookRepository
         var totalCount = await multi.ReadFirstAsync<int>();
 
         return (books, totalCount);
+    }
+
+    // Статистика для /About: «длина полки» и «вес полки» считаются по сумме CountPages
+    public async Task<long> GetTotalPageCountAsync()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<long>(
+            "SELECT ISNULL(SUM(COUNT), 0) FROM (SELECT CAST(CountPages AS BIGINT) AS COUNT FROM dbo.TblBooks) t");
+    }
+
+    // ===== СПРАВОЧНИКИ =====
+
+    public async Task<List<RefItem>> GetPublishersAsync()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return (await connection.QueryAsync<RefItem>(
+            "SELECT Id, Name FROM dbo.TblPublishers ORDER BY Name")).ToList();
+    }
+
+    public async Task<List<RefItem>> GetGenresAsync()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return (await connection.QueryAsync<RefItem>(
+            "SELECT Id, Name FROM dbo.TblGenres ORDER BY Name")).ToList();
+    }
+
+    public async Task<List<RefItem>> GetBookTypesAsync()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return (await connection.QueryAsync<RefItem>(
+            "SELECT Id, Name FROM dbo.TblBookTypes ORDER BY Name")).ToList();
+    }
+
+    // Названия жанров/типов для отображения в Details (текстовые списки)
+    public async Task<(List<string> Genres, List<string> BookTypes)> GetBookExtraNamesAsync(int bookId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        var genres = (await connection.QueryAsync<string>(@"
+            SELECT g.Name
+            FROM dbo.TblBookGenres bg
+            JOIN dbo.TblGenres g ON g.Id = bg.GenreId
+            WHERE bg.BookId = @BookId
+            ORDER BY g.Name", new { BookId = bookId })).ToList();
+        var types = (await connection.QueryAsync<string>(@"
+            SELECT t.Name
+            FROM dbo.TblBookTypes2Books tt
+            JOIN dbo.TblBookTypes t ON t.Id = tt.BookTypeId
+            WHERE tt.BookId = @BookId
+            ORDER BY t.Name", new { BookId = bookId })).ToList();
+        return (genres, types);
+    }
+
+    // ===== СВЯЗИ КНИГИ СО СПРАВОЧНИКАМИ =====
+
+    private static async Task<(List<int> GenreIds, List<int> BookTypeIds)> GetBookExtrasAsync(
+        IDbConnection connection, int bookId)
+    {
+        var genreIds = (await connection.QueryAsync<int>(
+            "SELECT GenreId FROM dbo.TblBookGenres WHERE BookId = @BookId",
+            new { BookId = bookId })).ToList();
+        var typeIds = (await connection.QueryAsync<int>(
+            "SELECT BookTypeId FROM dbo.TblBookTypes2Books WHERE BookId = @BookId",
+            new { BookId = bookId })).ToList();
+        return (genreIds, typeIds);
+    }
+
+    // Сохранение дополнительных реквизитов (жанры, типы, издательство-справочник).
+    // Вызывается после успешного spBooksCreate / spBooksUpdate. Прямой SQL, вне ХП — по ТЗ.
+    public async Task SaveBookExtrasAsync(int bookId, string? publisherName, List<int> genreIds, List<int> bookTypeIds)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        await SaveBookExtrasInternalAsync(connection, bookId, publisherName, genreIds, bookTypeIds);
+    }
+
+    private static async Task SaveBookExtrasInternalAsync(
+        IDbConnection connection, int bookId, string? publisherName, List<int> genreIds, List<int> bookTypeIds)
+    {
+        // Издательство: если ввели название, которого нет в справочнике — добавляем.
+        if (!string.IsNullOrWhiteSpace(publisherName))
+        {
+            await connection.ExecuteAsync(@"
+                IF NOT EXISTS (SELECT 1 FROM dbo.TblPublishers WHERE Name = @Name)
+                    INSERT INTO dbo.TblPublishers (Name) VALUES (@Name);",
+                new { Name = publisherName.Trim() });
+        }
+
+        // Жанры: заменяем набор связей на выбранный.
+        await connection.ExecuteAsync(
+            "DELETE FROM dbo.TblBookGenres WHERE BookId = @BookId;", new { BookId = bookId });
+        foreach (var gid in (genreIds ?? new List<int>()).Distinct())
+        {
+            await connection.ExecuteAsync(
+                "INSERT INTO dbo.TblBookGenres (BookId, GenreId) VALUES (@BookId, @GenreId);",
+                new { BookId = bookId, GenreId = gid });
+        }
+
+        // Типы книг: аналогично.
+        await connection.ExecuteAsync(
+            "DELETE FROM dbo.TblBookTypes2Books WHERE BookId = @BookId;", new { BookId = bookId });
+        foreach (var tid in (bookTypeIds ?? new List<int>()).Distinct())
+        {
+            await connection.ExecuteAsync(
+                "INSERT INTO dbo.TblBookTypes2Books (BookId, BookTypeId) VALUES (@BookId, @BookTypeId);",
+                new { BookId = bookId, BookTypeId = tid });
+        }
     }
 
     // ===== ВСПОМОГАТЕЛЬНЫЙ МЕТОД =====

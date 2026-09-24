@@ -22,6 +22,18 @@ public class EditModel : PageModel
     [BindProperty]
     public List<Chapter> Chapters { get; set; } = new();
 
+    // Справочники для формы
+    public List<RefItem> Publishers { get; set; } = new();
+    public List<RefItem> Genres { get; set; } = new();
+    public List<RefItem> BookTypes { get; set; } = new();
+
+    private async Task LoadRefsAsync()
+    {
+        Publishers = await _repo.GetPublishersAsync();
+        Genres = await _repo.GetGenresAsync();
+        BookTypes = await _repo.GetBookTypesAsync();
+    }
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var (book, chapters) = await _repo.GetByIdWithChaptersAsync(id);
@@ -30,10 +42,11 @@ public class EditModel : PageModel
 
         Book = book;
         Chapters = chapters;
+        await LoadRefsAsync();
         return Page();
     }
 
-    public IActionResult OnPostAddChapter()
+    public async Task<IActionResult> OnPostAddChapter()
     {
         var last = Chapters.LastOrDefault();
         var start = last is null ? (short)1 : (short)(last.EndPage + 1);
@@ -43,13 +56,15 @@ public class EditModel : PageModel
             StartPage = start,
             EndPage = 0 // Пустое значение для валидации
         });
+        await LoadRefsAsync();
         return Page();
     }
 
-    public IActionResult OnPostRemoveChapter(int index)
+    public async Task<IActionResult> OnPostRemoveChapter(int index)
     {
         if (index >= 0 && index < Chapters.Count)
             Chapters.RemoveAt(index);
+        await LoadRefsAsync();
         return Page();
     }
 
@@ -87,12 +102,14 @@ public class EditModel : PageModel
         {
             ModelState.AddModelError(string.Empty, validationError);
             // НЕ перезагружаем данные из БД, чтобы сохранить введенные пользователем значения
+            await LoadRefsAsync();
             return Page();
         }
 
         if (!ModelState.IsValid)
         {
             // НЕ перезагружаем данные из БД, чтобы сохранить введенные пользователем значения и показать ошибки валидации
+            await LoadRefsAsync();
             return Page();
         }
 
@@ -100,6 +117,7 @@ public class EditModel : PageModel
         switch (code)
         {
             case OperationCode.Success:
+                await _repo.SaveBookExtrasAsync(Book.Id, Book.Publisher, Book.GenreIds, Book.BookTypeIds);
                 return RedirectToPage("Details", new { id = Book.Id });
             case OperationCode.Duplicate:
                 _logger.LogWarning("Дубль ISBN {Isbn} при обновлении Id={Id}", Book.Isbn, Book.Id);
@@ -117,6 +135,7 @@ public class EditModel : PageModel
         if (reloadBook == null) return NotFound();
         Book = reloadBook;
         Chapters = reloadChapters;
+        await LoadRefsAsync();
         return Page();
     }
 }

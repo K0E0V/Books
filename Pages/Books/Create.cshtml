@@ -40,8 +40,40 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Book.Publisher" class="form-label">Издатель</label>
-                        <input asp-for="Book.Publisher" class="form-control" />
+                        <label asp-for="Book.CountPages" class="form-label">Количество страниц *</label>
+                        <div>
+                            <input asp-for="Book.CountPages" type="number" class="form-control" min="1" required />
+                            <span asp-validation-for="Book.CountPages" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Издательство *</label>
+                        <div>
+                            <input asp-for="Book.Publisher" class="form-control" list="publishersDatalist" required />
+                            <datalist id="publishersDatalist">
+                                @foreach (var p in Model.Publishers)
+                                {
+                                    <option value="@p.Name"></option>
+                                }
+                            </datalist>
+                            <span asp-validation-for="Book.Publisher" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Жанры</label>
+                        <div>
+                            <select asp-for="Book.GenreIds" class="form-select" multiple size="5"
+                                    asp-items="@(new SelectList(Model.Genres, "Id", "Name"))"></select>
+                            <small class="text-muted">Выбор нескольких — Ctrl/Cmd + клик.</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Типы книги</label>
+                        <div>
+                            <select asp-for="Book.BookTypeIds" class="form-select" multiple size="5"
+                                    asp-items="@(new SelectList(Model.BookTypes, "Id", "Name"))"></select>
+                            <small class="text-muted">Выбор нескольких — Ctrl/Cmd + клик.</small>
+                        </div>
                     </div>
 
                     <div class="mb-3">

@@ -31,8 +31,41 @@
                     <dt class="col-sm-4 col-form-label py-1">ISBN:</dt>
                     <dd class="col-sm-8 py-1">@(Model.Book?.Isbn ?? "—")</dd>
 
-                    <dt class="col-sm-4 col-form-label py-1">Издатель:</dt>
+                    <dt class="col-sm-4 col-form-label py-1">Количество страниц:</dt>
+                    <dd class="col-sm-8 py-1">@Model.Book?.CountPages</dd>
+
+                    <dt class="col-sm-4 col-form-label py-1">Издательство:</dt>
                     <dd class="col-sm-8 py-1">@(Model.Book?.Publisher ?? "—")</dd>
+
+                    <dt class="col-sm-4 col-form-label py-1">Жанры:</dt>
+                    <dd class="col-sm-8 py-1">
+                        @if (Model.Genres.Any())
+                        {
+                            foreach (var g in Model.Genres)
+                            {
+                                <span class="badge text-bg-secondary me-1">@g</span>
+                            }
+                        }
+                        else
+                        {
+                            <text>—</text>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-4 col-form-label py-1">Типы:</dt>
+                    <dd class="col-sm-8 py-1">
+                        @if (Model.BookTypes.Any())
+                        {
+                            foreach (var t in Model.BookTypes)
+                            {
+                                <span class="badge text-bg-info me-1">@t</span>
+                            }
+                        }
+                        else
+                        {
+                            <text>—</text>
+                        }
+                    </dd>
 
                     <dt class="col-sm-4 col-form-label py-1">Описание:</dt>
                     <dd class="col-sm-8 py-1">@Model.Book?.Description</dd>
