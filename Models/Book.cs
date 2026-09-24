@@ -14,6 +14,7 @@ namespace Books.Models
         [Required(ErrorMessage = "Укажите издательство.")]
         [StringLength(200)]
         public string? Publisher { get; set; }
+        public int? CounPages { get; set; }
         public string? Description { get; set; }
 
         /// <summary>Количество страниц. В БД колонка CountPages NOT NULL.</summary>

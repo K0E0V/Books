@@ -68,8 +68,7 @@ public class BookRepository
         return ((OperationCode)parameters.Get<byte>("@ResultCode"), parameters.Get<int>("@NewId"));    
     }
 
-    // Обновление книги
-    // Обновление книги — контракт ADR-002: код операции наружу, техника насквозь
+    // Обновление книги 
     public async Task<OperationCode> UpdateAsync(Book book, List<Chapter> chapters)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -147,16 +146,6 @@ public class BookRepository
         var totalCount = await multi.ReadFirstAsync<int>();
 
         return (books, totalCount);
-    }
-
-    // Статистика для /About: количество книг и суммарная длина полки по CountPages
-    public async Task<(int BookCount, long TotalPages)> GetAboutStatsAsync()
-    {
-        using var connection = new SqlConnection(_connectionString);
-        return await connection.QueryFirstAsync<(int BookCount, long TotalPages)>(@"
-            SELECT COUNT(*)                    AS BookCount,
-                   ISNULL(SUM(CountPages), 0)  AS TotalPages
-            FROM dbo.tblBooks");
     }
 
     // ===== СПРАВОЧНИКИ =====
@@ -280,5 +269,25 @@ public class BookRepository
 
         xml.AppendLine("</BookContents>");
         return xml.ToString();
+    }
+
+    public async Task<AboutStats> GetAboutStatsAsync()
+    {
+        var since = DateTime.Now.AddHours(-24); // если CreatedAt в UTC — DateTime.UtcNow
+
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var totalBooks = await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM tblBooks;");
+
+        var booksLast24h = await connection.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM  tblBooks WHERE CreatedAt >= @since;",
+            new { since });
+
+        var totalPages = await connection.ExecuteScalarAsync<int>(
+            "SELECT ISNULL(SUM(CountPages), 0) FROM dbo.tblBooks;");
+
+        return new AboutStats(totalBooks, booksLast24h, totalPages);
     }
 }
