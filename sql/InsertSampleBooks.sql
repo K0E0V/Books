@@ -16,7 +16,7 @@ EXEC dbo.spBooksCreate
     @Publisher = N'АСТ',
     @Description = N'Роман о визите дьявола в Москву.',
     @ContentsXml = NULL,
-    @PageCount = 480,
+    @CountPages = 480,
     @NewId = @NewId OUTPUT,
     @ResultCode = @ResultCode OUTPUT;
 SELECT @NewId AS BookId1;
@@ -29,7 +29,7 @@ EXEC dbo.spBooksCreate
     @Publisher = N'Эксмо',
     @Description = N'Роман о студере Раскольникове.',
     @ContentsXml = NULL,
-    @PageCount = 672,
+    @CountPages = 672,
     @NewId = @NewId OUTPUT,
     @ResultCode = @ResultCode OUTPUT;
 SELECT @NewId AS BookId2;
@@ -42,7 +42,7 @@ EXEC dbo.spBooksCreate
     @Publisher = N'АСТ',
     @Description = N'Роман-эпопея о донском казачестве.',
     @ContentsXml = NULL,
-    @PageCount = 1208,
+    @CountPages = 1208,
     @NewId = @NewId OUTPUT,
     @ResultCode = @ResultCode OUTPUT;
 SELECT @NewId AS BookId3;

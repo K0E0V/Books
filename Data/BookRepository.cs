@@ -60,7 +60,7 @@ public class BookRepository
             book.Isbn,
             book.Publisher,
             book.Description,
-            PageCount = book.CountPages, // имя параметра ХП — @PageCount
+            book.CountPages,
             ContentsXml = GenerateXmlFromChapters(chapters)
         });
 
@@ -89,7 +89,7 @@ public class BookRepository
             book.Isbn,
             book.Publisher,
             book.Description,
-            PageCount = book.CountPages, // имя параметра ХП — @PageCount
+            book.CountPages,
             ContentsXml = GenerateXmlFromChapters(chapters)
         });
         parameters.Add("@ResultCode", dbType: DbType.Byte, direction: ParameterDirection.Output);
