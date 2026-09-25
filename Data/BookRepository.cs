@@ -211,7 +211,7 @@ public class BookRepository
             FROM dbo.TblBookTypes bt
             JOIN dbo.TblTypes t ON t.Id = bt.TypeId
             WHERE bt.BookId IN @Ids
-            ORDER BY 2, 3", new { Ids })).ToList();
+            ORDER BY 2, 3", new { Ids = ids })).ToList();
 
         foreach (var book in books)
         {
