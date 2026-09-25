@@ -1,20 +1,32 @@
-﻿@page
+@page
 @model Books.Pages.ErrorModel
 @{
     ViewData["Title"] = "Ошибка";
-    var title = Model.ErrorCode.HasValue
-        ? $"Произошла ошибка (код {Model.ErrorCode})"
-        : "Произошла ошибка";
 }
 
-
-
-
 <div class="container mt-4">
-    <h1 class="text-danger">Произошла ошибка@codeText</h1>
+    <h1 class="text-danger">Произошла ошибка</h1>
     <p class="lead">
-        Извините, что-то пошло не так. Подробности записаны в лог.
+        Извините, что-то пошло не так. Текст ошибки выведен ниже (и продублирован в лог).
     </p>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <strong>Сообщение об ошибке:</strong>
+            <pre class="mb-0 mt-2" style="white-space: pre-wrap;">@Model.ErrorMessage</pre>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorPath))
+    {
+        <p class="mb-1"><strong>Запрос:</strong> <code>@Model.ErrorPath</code></p>
+    }
+
+    @if (Model.ErrorCode.HasValue)
+    {
+        <p class="text-muted">Код состояния HTTP: <code>@Model.ErrorCode</code></p>
+    }
 
     @if (Model.ShowRequestId)
     {
