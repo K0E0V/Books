@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model Books.Pages.Books.IndexModel
 @{
     ViewData["Title"] = "Список книг";
@@ -6,16 +6,53 @@
 
 <h1 class="h3">Каталог книг</h1>
 
-<!-- Форма поиска -->
+<!-- Форма поиска и фильтров -->
 <form method="get" class="mb-3">
-    <div class="input-group">
-        <input type="text" name="search" value="@Model.SearchTerm"
-               class="form-control" placeholder="Поиск по названию, автору или оглавлению..." />
-        <button type="submit" class="btn btn-primary">Найти</button>
-        @if (!string.IsNullOrEmpty(Model.SearchTerm))
-        {
-            <a asp-page="Index" class="btn btn-secondary">Сбросить</a>
-        }
+    @* Сохраняем сортировку при фильтрации *@
+    <input type="hidden" name="sortBy" value="@Model.SortBy" />
+    <input type="hidden" name="sortDesc" value="@(Model.SortDesc ? "true" : "")" />
+
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small mb-1" for="search">Поиск</label>
+            <div class="input-group">
+                <input id="search" type="text" name="search" value="@Model.Search"
+                       class="form-control form-control-sm"
+                       placeholder="Название, автор или оглавление..." />
+                <button type="submit" class="btn btn-primary btn-sm">Найти</button>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1" asp-for="GenreId">Жанр</label>
+            <select asp-for="GenreId" class="form-select form-select-sm" name="genreId"
+                    asp-items="@(new SelectList(Model.Genres, "Id", "Name"))">
+                <option value="">— все жанры —</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1" asp-for="TypeId">Тип</label>
+            <select asp-for="TypeId" class="form-select form-select-sm" name="typeId"
+                    asp-items="@(new SelectList(Model.BookTypes, "Id", "Name"))">
+                <option value="">— все типы —</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1" asp-for="Author">Автор</label>
+            <select asp-for="Author" class="form-select form-select-sm" name="author"
+                    asp-items="@(new SelectList(Model.Authors))">
+                <option value="">— все авторы —</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small mb-1" asp-for="Year">Год</label>
+            <select asp-for="Year" class="form-select form-select-sm" name="year"
+                    asp-items="@(new SelectList(Model.Years))">
+                <option value="">— все годы —</option>
+            </select>
+        </div>
+    </div>
+    <div class="mt-2">
+        <a asp-page="Index" class="btn btn-secondary btn-sm">Сбросить фильтры</a>
     </div>
 </form>
 
@@ -26,13 +63,16 @@
 
 @if (Model.Books.Any())
 {
-    <table class="table table-striped table-hover">
+    <table class="table table-striped table-hover align-middle">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Название</th>
-                <th>Автор</th>
-                <th>Год</th>
+                <th><a href="@Model.SortLink("id")" class="text-decoration-none">ID @(Model.SortBy == "id" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
+                <th><a href="@Model.SortLink("title")" class="text-decoration-none">Название @(Model.SortBy == "title" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
+                <th><a href="@Model.SortLink("author")" class="text-decoration-none">Автор @(Model.SortBy == "author" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
+                <th><a href="@Model.SortLink("year")" class="text-decoration-none">Год @(Model.SortBy == "year" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
+                <th><a href="@Model.SortLink("pages")" class="text-decoration-none">Страниц @(Model.SortBy == "pages" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
+                <th>Жанры</th>
+                <th>Типы</th>
                 <th>ISBN</th>
                 <th>Издатель</th>
             </tr>
@@ -40,14 +80,41 @@
         <tbody>
             @foreach (var book in Model.Books)
             {
-                <tr style="cursor: pointer;" 
-                    onmouseover="this.classList.add('table-active')" 
+                <tr style="cursor: pointer;"
+                    onmouseover="this.classList.add('table-active')"
                     onmouseout="this.classList.remove('table-active')"
                     onclick="window.location.href='@Url.Page("Details", new { id = book.Id })'">
                     <td>@book.Id</td>
                     <td>@book.Title</td>
                     <td>@book.Author</td>
                     <td>@book.PublicationYear</td>
+                    <td>@book.CountPages</td>
+                    <td>
+                        @if (book.Genres.Any())
+                        {
+                            foreach (var g in book.Genres)
+                            {
+                                <span class="badge text-bg-secondary me-1">@g</span>
+                            }
+                        }
+                        else
+                        {
+                            <text>—</text>
+                        }
+                    </td>
+                    <td>
+                        @if (book.BookTypes.Any())
+                        {
+                            foreach (var t in book.BookTypes)
+                            {
+                                <span class="badge text-bg-info me-1">@t</span>
+                            }
+                        }
+                        else
+                        {
+                            <text>—</text>
+                        }
+                    </td>
                     <td>@(book.Isbn ?? "—")</td>
                     <td>@(book.Publisher ?? "—")</td>
                 </tr>
@@ -55,13 +122,13 @@
         </tbody>
     </table>
 
-    <!-- Пагинация -->
+    <!-- Пагинация (сохраняет фильтры и сортировку) -->
     <nav>
         <ul class="pagination">
             @if (Model.CurrentPage > 1)
             {
                 <li class="page-item">
-                    <a class="page-link" asp-page="Index" asp-route-page="@(Model.CurrentPage - 1)" asp-route-search="@Model.SearchTerm">← Назад</a>
+                    <a class="page-link" href="@Model.Href(Model.CurrentPage - 1)">← Назад</a>
                 </li>
             }
 
@@ -72,7 +139,7 @@
             @if (Model.CurrentPage * Model.PageSize < Model.TotalCount)
             {
                 <li class="page-item">
-                    <a class="page-link" asp-page="Index" asp-route-page="@(Model.CurrentPage + 1)" asp-route-search="@Model.SearchTerm">Вперёд →</a>
+                    <a class="page-link" href="@Model.Href(Model.CurrentPage + 1)">Вперёд →</a>
                 </li>
             }
         </ul>
@@ -81,6 +148,8 @@
 else
 {
     <div class="alert alert-info">
-        @(string.IsNullOrEmpty(Model.SearchTerm) ? "Книги не найдены. Добавьте первую книгу!" : "По вашему запросу ничего не найдено.")
+        @(string.IsNullOrEmpty(Model.Search) && Model.GenreId == null && Model.TypeId == null && Model.Year == null && string.IsNullOrEmpty(Model.Author)
+            ? "Книги не найдены. Добавьте первую книгу!"
+            : "По заданным фильтрам ничего не найдено.")
     </div>
 }
