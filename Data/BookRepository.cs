@@ -34,6 +34,12 @@ public class BookRepository
             var extras = await GetBookExtrasAsync(connection, book.Id);
             book.GenreIds = extras.GenreIds;
             book.BookTypeIds = extras.BookTypeIds;
+
+            // Названия жанров и типов — сразу заполняем модель,
+            // чтобы они были видны и в режиме просмотра, и в режиме редактирования.
+            var names = await GetBookExtraNamesInternalAsync(connection, book.Id);
+            book.Genres = names.Genres;
+            book.BookTypes = names.BookTypes;
         }
 
         return (book, chapters);
@@ -114,24 +120,46 @@ public class BookRepository
         return (OperationCode)parameters.Get<byte>("@ResultCode");
     }
 
-    // Получение всех книг (для списка)
-    public async Task<(List<Book> Books, int TotalCount)> GetAllAsync(int pageNumber = 1, int pageSize = 10)
+    // Получение всех книг (для списка). Поддерживает фильтры и сортировку — dbo.spBooksGetListV2.
+    public async Task<(List<Book> Books, int TotalCount)> GetAllAsync(
+        int pageNumber = 1,
+        int pageSize = 10,
+        string? search = null,
+        int? genreId = null,
+        int? typeId = null,
+        int? year = null,
+        string? author = null,
+        string? sortBy = null,
+        bool sortDesc = false)
     {
         using var connection = new SqlConnection(_connectionString);
-        var parameters = new { PageNumber = pageNumber, PageSize = pageSize };
+        var parameters = new
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            Search = string.IsNullOrWhiteSpace(search) ? null : search.Trim(),
+            GenreId = genreId,
+            TypeId = typeId,
+            Year = year,
+            Author = string.IsNullOrWhiteSpace(author) ? null : author.Trim(),
+            SortBy = string.IsNullOrWhiteSpace(sortBy) ? null : sortBy.Trim().ToLowerInvariant(),
+            SortDesc = sortDesc
+        };
 
         using var multi = await connection.QueryMultipleAsync(
-            "dbo.spBooksGetList",
+            "dbo.spBooksGetListV2",
             parameters,
             commandType: CommandType.StoredProcedure);
 
         var books = (await multi.ReadAsync<Book>()).ToList();
         var totalCount = await multi.ReadFirstAsync<int>();
 
+        await AttachGenresAndTypesAsync(connection, books);
+
         return (books, totalCount);
     }
 
-    // Поиск книг
+    // Поиск книг (оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами)
     public async Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -145,7 +173,51 @@ public class BookRepository
         var books = (await multi.ReadAsync<Book>()).ToList();
         var totalCount = await multi.ReadFirstAsync<int>();
 
+        await AttachGenresAndTypesAsync(connection, books);
+
         return (books, totalCount);
+    }
+
+    // Список авторов для фильтра (из таблицы книг, без дублей)
+    public async Task<List<string>> GetAuthorsAsync()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return (await connection.QueryAsync<string>(
+            "SELECT DISTINCT Author FROM dbo.tblBooks WHERE Author IS NOT NULL AND Author <> '' ORDER BY Author")).ToList();
+    }
+
+    // Список годов издания для фильтра
+    public async Task<List<int>> GetYearsAsync()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return (await connection.QueryAsync<int>(
+            "SELECT DISTINCT PublicationYear FROM dbo.tblBooks ORDER BY PublicationYear DESC")).ToList();
+    }
+
+    // Пакетная загрузка: подставляет жанры/типы ко всем книгам списка одним запросом
+    private static async Task AttachGenresAndTypesAsync(IDbConnection connection, List<Book> books)
+    {
+        if (books.Count == 0) return;
+
+        var ids = books.Select(b => b.Id).ToList();
+
+        var rows = (await connection.QueryAsync<(int BookId, string Kind, string Name)>(@"
+            SELECT bg.BookId, 'G' AS Kind, g.Name
+            FROM dbo.TblBookGenres bg
+            JOIN dbo.TblGenres g ON g.Id = bg.GenreId
+            WHERE bg.BookId IN @Ids
+            UNION ALL
+            SELECT bt.BookId, 'T' AS Kind, t.Name
+            FROM dbo.TblBookTypes bt
+            JOIN dbo.TblTypes t ON t.Id = bt.TypeId
+            WHERE bt.BookId IN @Ids
+            ORDER BY 2, 3", new { Ids })).ToList();
+
+        foreach (var book in books)
+        {
+            book.Genres = rows.Where(r => r.BookId == book.Id && r.Kind == "G").Select(r => r.Name).ToList();
+            book.BookTypes = rows.Where(r => r.BookId == book.Id && r.Kind == "T").Select(r => r.Name).ToList();
+        }
     }
 
     // ===== СПРАВОЧНИКИ =====
@@ -175,6 +247,12 @@ public class BookRepository
     public async Task<(List<string> Genres, List<string> BookTypes)> GetBookExtraNamesAsync(int bookId)
     {
         using var connection = new SqlConnection(_connectionString);
+        return await GetBookExtraNamesInternalAsync(connection, bookId);
+    }
+
+    private static async Task<(List<string> Genres, List<string> BookTypes)> GetBookExtraNamesInternalAsync(
+        IDbConnection connection, int bookId)
+    {
         var genres = (await connection.QueryAsync<string>(@"
             SELECT g.Name
             FROM dbo.TblBookGenres bg
