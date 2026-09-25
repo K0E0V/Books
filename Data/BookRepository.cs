@@ -60,7 +60,7 @@ public class BookRepository
             book.Isbn,
             book.Publisher,
             book.Description,
-            book.CountPages, // NOT NULL в dbo.TblBooks — всегда конкретное число
+            book.CountPages,
             ContentsXml = GenerateXmlFromChapters(chapters)
         });
 
@@ -89,7 +89,7 @@ public class BookRepository
             book.Isbn,
             book.Publisher,
             book.Description,
-            book.CountPages, // NOT NULL в dbo.TblBooks — всегда конкретное число
+            book.CountPages,
             ContentsXml = GenerateXmlFromChapters(chapters)
         });
         parameters.Add("@ResultCode", dbType: DbType.Byte, direction: ParameterDirection.Output);
