@@ -29,6 +29,26 @@ public class BookRepository
         var book = await multi.ReadFirstOrDefaultAsync<Book>();
         var chapters = (await multi.ReadAsync<Chapter>()).ToList();
 
+        // ВАЖНО: пока GridReader (multi) не будет закрыт (Dispose),
+        // на соединении остаётся активный DataReader и любые другие запросы
+        // через это же соединение падают с ошибкой
+        // «Connection already has an associated DataReader open».
+        // Поэтому дочитываем ВСЕ наборы результатов ХП до Dispose.
+        List<string> genreNames = new();
+        List<string> typeNames = new();
+        try
+        {
+            genreNames = (await multi.ReadAsync<string>()).ToList();
+            typeNames = (await multi.ReadAsync<string>()).ToList();
+        }
+        catch (InvalidOperationException)
+        {
+            // Набор №3 отсутствует (старая версия spBooksGetById без жанров/типов) —
+            // догрузим отдельными запросами ниже.
+        }
+
+        multi.Dispose(); // освобождаем соединение от DataReader
+
         if (book != null)
         {
             var extras = await GetBookExtrasAsync(connection, book.Id);
@@ -37,9 +57,17 @@ public class BookRepository
 
             // Названия жанров и типов — сразу заполняем модель,
             // чтобы они были видны и в режиме просмотра, и в режиме редактирования.
-            var names = await GetBookExtraNamesInternalAsync(connection, book.Id);
-            book.Genres = names.Genres;
-            book.BookTypes = names.BookTypes;
+            if (genreNames.Count > 0 || typeNames.Count > 0)
+            {
+                book.Genres = genreNames;
+                book.BookTypes = typeNames;
+            }
+            else
+            {
+                var names = await GetBookExtraNamesInternalAsync(connection, book.Id);
+                book.Genres = names.Genres;
+                book.BookTypes = names.BookTypes;
+            }
         }
 
         return (book, chapters);
@@ -60,7 +88,7 @@ public class BookRepository
             book.Isbn,
             book.Publisher,
             book.Description,
-            book.CountPages, // NOT NULL в dbo.TblBooks — всегда конкретное число
+            book.CountPages,
             ContentsXml = GenerateXmlFromChapters(chapters)
         });
 
@@ -89,7 +117,7 @@ public class BookRepository
             book.Isbn,
             book.Publisher,
             book.Description,
-            book.CountPages, // NOT NULL в dbo.TblBooks — всегда конкретное число
+            book.CountPages,
             ContentsXml = GenerateXmlFromChapters(chapters)
         });
         parameters.Add("@ResultCode", dbType: DbType.Byte, direction: ParameterDirection.Output);
@@ -154,6 +182,8 @@ public class BookRepository
         var books = (await multi.ReadAsync<Book>()).ToList();
         var totalCount = await multi.ReadFirstAsync<int>();
 
+        multi.Dispose(); // закрываем DataReader до следующих запросов на этом соединении
+
         await AttachGenresAndTypesAsync(connection, books);
 
         return (books, totalCount);
@@ -172,6 +202,8 @@ public class BookRepository
 
         var books = (await multi.ReadAsync<Book>()).ToList();
         var totalCount = await multi.ReadFirstAsync<int>();
+
+        multi.Dispose(); // закрываем DataReader до следующих запросов на этом соединении
 
         await AttachGenresAndTypesAsync(connection, books);
 
