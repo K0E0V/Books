@@ -1,7 +1,1 @@
-Nothing should be ignored based on the provided file changes. The modification of 'Pages/Books/Edit.cshtml.cs' is a source code file that should be tracked in version control.
-.vs/
-bin/
-obj/
-logs/
-*.user
-*.log
+(empty)
