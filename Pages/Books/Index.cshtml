@@ -8,18 +8,23 @@
 
 <!-- Форма поиска и фильтров -->
 <form method="get" class="mb-3">
-    @* Сохраняем сортировку при фильтрации *@
+    @* Сохраняем сортировку и текущую страницу при фильтрации *@
     <input type="hidden" name="sortBy" value="@Model.SortBy" />
     <input type="hidden" name="sortDesc" value="@(Model.SortDesc ? "true" : "")" />
+    <input type="hidden" name="page" value="@Model.CurrentPage" />
+
+    @* Кнопка «Фильтры» (моб.) в одном ряду с кнопкой «Добавить книгу» *@
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a asp-page="Create" class="btn btn-success">+ Добавить книгу</a>
+        <button class="btn btn-outline-secondary d-lg-none" type="button"
+                data-bs-toggle="collapse" data-bs-target="#filtersCollapse"
+                aria-expanded="false" aria-controls="filtersCollapse">
+            Фильтры ▾
+        </button>
+    </div>
 
     @* На мобильных фильтры скрыты под спойлер (collapse), на десктопе всегда видны *@
-    <button class="btn btn-outline-secondary btn-sm d-lg-none mb-2" type="button"
-            data-bs-toggle="collapse" data-bs-target="#filtersCollapse"
-            aria-expanded="false" aria-controls="filtersCollapse">
-        Фильтры ▾
-    </button>
-
-    <div class="collapse d-lg-block" id="filtersCollapse">
+    <div class="collapse d-lg-block mb-3" id="filtersCollapse">
     <div class="row g-2 align-items-end">
         <div class="col-12 col-lg-4">
             <label class="form-label small mb-1" for="search">Поиск</label>
@@ -55,35 +60,28 @@
                 <option value="">— все годы —</option>
             </select>
         </div>
-        <div class="col-6 col-lg-2 d-grid">
-            <button type="submit" class="btn btn-primary btn-sm">Применить фильтры</button>
-        </div>
     </div>
     <div class="mt-2">
-        <a asp-page="Index" class="btn btn-secondary btn-sm">Сбросить фильтры</a>
+        <button type="submit" class="btn btn-primary btn-sm">Применить фильтры</button>
+        <a asp-page="Index" class="btn btn-secondary btn-sm ms-1">Сбросить фильтры</a>
     </div>
     </div>@* /filtersCollapse *@
 </form>
 
-<!-- Кнопка создания -->
-<div class="mb-3">
-    <a asp-page="Create" class="btn btn-success">+ Добавить книгу</a>
-</div>
-
 @if (Model.Books.Any())
 {
-    <table class="table table-striped table-hover align-middle">
+    <table class="table table-striped table-hover align-middle books-table">
         <thead>
             <tr>
-                <th><a href="@Model.SortLink("id")" class="text-decoration-none">ID @(Model.SortBy == "id" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
+                <th class="col-hide-mobile"><a href="@Model.SortLink("id")" class="text-decoration-none">ID @(Model.SortBy == "id" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
                 <th><a href="@Model.SortLink("title")" class="text-decoration-none">Название @(Model.SortBy == "title" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
                 <th><a href="@Model.SortLink("author")" class="text-decoration-none">Автор @(Model.SortBy == "author" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
                 <th><a href="@Model.SortLink("year")" class="text-decoration-none">Год @(Model.SortBy == "year" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
                 <th><a href="@Model.SortLink("pages")" class="text-decoration-none">Страниц @(Model.SortBy == "pages" ? (Model.SortDesc ? "▼" : "▲") : "")</a></th>
                 <th>Жанры</th>
                 <th>Типы</th>
-                <th>ISBN</th>
-                <th>Издатель</th>
+                <th class="col-hide-mobile">ISBN</th>
+                <th class="col-hide-mobile">Издатель</th>
             </tr>
         </thead>
         <tbody>
@@ -93,7 +91,7 @@
                     onmouseover="this.classList.add('table-active')"
                     onmouseout="this.classList.remove('table-active')"
                     onclick="window.location.href='@Url.Page("Details", new { id = book.Id })'">
-                    <td>@book.Id</td>
+                    <td class="col-hide-mobile">@book.Id</td>
                     <td>@book.Title</td>
                     <td>@book.Author</td>
                     <td>@book.PublicationYear</td>
@@ -103,7 +101,7 @@
                         {
                             foreach (var g in book.Genres)
                             {
-                                <span class="badge text-bg-light border me-1">@g</span>
+                                <span class="badge book-badge me-1">@g</span>
                             }
                         }
                         else
@@ -116,7 +114,7 @@
                         {
                             foreach (var t in book.BookTypes)
                             {
-                                <span class="badge text-bg-light border me-1">@t</span>
+                                <span class="badge book-badge me-1">@t</span>
                             }
                         }
                         else
@@ -124,8 +122,8 @@
                             <text>—</text>
                         }
                     </td>
-                    <td>@(book.Isbn ?? "—")</td>
-                    <td>@(book.Publisher ?? "—")</td>
+                    <td class="col-hide-mobile">@(book.Isbn ?? "—")</td>
+                    <td class="col-hide-mobile">@(book.Publisher ?? "—")</td>
                 </tr>
             }
         </tbody>
