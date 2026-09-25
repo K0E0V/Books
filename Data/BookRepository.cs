@@ -233,13 +233,17 @@ public class BookRepository
 
         var ids = books.Select(b => b.Id).ToList();
 
-        var rows = (await connection.QueryAsync<(int BookId, string Kind, string Name)>(@"
-            SELECT bg.BookId, 'G' AS Kind, g.Name
+        // ВАЖНО: результат читаем как «сырые» строки dynamic. Кортеж (int BookId, ...)
+        // в Dapper не работает: колонка UNION называется BookId, а свойство кортежа — Item1,
+        // маппинг не срабатывает и фильтр по книге фактически не применяется
+        // (из-за чего каждой книге подставлялись ВСЕ жанры/типы из БД).
+        var rows = (await connection.QueryAsync(@"
+            SELECT bg.BookId AS BookId, 'G' AS Kind, g.Name AS Name
             FROM dbo.TblBookGenres bg
             JOIN dbo.TblGenres g ON g.Id = bg.GenreId
             WHERE bg.BookId IN @Ids
             UNION ALL
-            SELECT bt.BookId, 'T' AS Kind, t.Name
+            SELECT bt.BookId AS BookId, 'T' AS Kind, t.Name AS Name
             FROM dbo.TblBookTypes bt
             JOIN dbo.TblTypes t ON t.Id = bt.TypeId
             WHERE bt.BookId IN @Ids
@@ -247,8 +251,10 @@ public class BookRepository
 
         foreach (var book in books)
         {
-            book.Genres = rows.Where(r => r.BookId == book.Id && r.Kind == "G").Select(r => r.Name).ToList();
-            book.BookTypes = rows.Where(r => r.BookId == book.Id && r.Kind == "T").Select(r => r.Name).ToList();
+            book.Genres = rows.Where(r => Convert.ToInt32(r.BookId) == book.Id && (string)r.Kind == "G")
+                              .Select(r => (string)r.Name).ToList();
+            book.BookTypes = rows.Where(r => Convert.ToInt32(r.BookId) == book.Id && (string)r.Kind == "T")
+                                 .Select(r => (string)r.Name).ToList();
         }
     }
 
