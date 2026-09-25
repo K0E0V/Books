@@ -34,9 +34,11 @@ public class DeleteModel : PageModel
             case OperationCode.Success:
                 TempData["SuccessMessage"] = "Книга успешно удалена.";
                 return RedirectToPage("Index");                       // PRG
-            case OperationCode.Duplicate:                             // FK: на книгу есть ссылки
+            case OperationCode.Duplicate:
+                // Ссылки из таблиц-связок (TblBookGenres/TblBookTypes) ХП spBooksDelete
+                // очищает автоматически — эта ветка срабатывает только при внешних FK.
                 ModelState.AddModelError(string.Empty,
-                    "Книгу нельзя удалить: на неё ссылаются другие записи.");
+                    "Книгу нельзя удалить: на неё ссылаются записи вне каталога.");
                 // Перезагружаем данные для отображения страницы подтверждения снова
                 var (book, _) = await _repo.GetByIdWithChaptersAsync(id);
                 Book = book;
