@@ -113,6 +113,7 @@ public class EditModel : PageModel
         dbBook.Isbn = Book.Isbn;
         dbBook.Publisher = Book.Publisher;
         dbBook.Description = Book.Description;
+        dbBook.CountPages = Book.CountPages; // без этой строки введённое значение терялось: сохранялась книга из БД
 
         var code = await _repo.UpdateAsync(dbBook, Chapters);
 
