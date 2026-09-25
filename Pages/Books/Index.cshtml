@@ -12,48 +12,57 @@
     <input type="hidden" name="sortBy" value="@Model.SortBy" />
     <input type="hidden" name="sortDesc" value="@(Model.SortDesc ? "true" : "")" />
 
+    @* На мобильных фильтры скрыты под спойлер (collapse), на десктопе всегда видны *@
+    <button class="btn btn-outline-secondary btn-sm d-lg-none mb-2" type="button"
+            data-bs-toggle="collapse" data-bs-target="#filtersCollapse"
+            aria-expanded="false" aria-controls="filtersCollapse">
+        Фильтры ▾
+    </button>
+
+    <div class="collapse d-lg-block" id="filtersCollapse">
     <div class="row g-2 align-items-end">
-        <div class="col-md-4">
+        <div class="col-12 col-lg-4">
             <label class="form-label small mb-1" for="search">Поиск</label>
-            <div class="input-group">
-                <input id="search" type="text" name="search" value="@Model.Search"
-                       class="form-control form-control-sm"
-                       placeholder="Название, автор или оглавление..." />
-                <button type="submit" class="btn btn-primary btn-sm">Найти</button>
-            </div>
+            <input id="search" type="text" name="search" value="@Model.Search"
+                   class="form-control form-control-sm"
+                   placeholder="Название, автор или оглавление..." />
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-lg-2">
             <label class="form-label small mb-1" asp-for="GenreId">Жанр</label>
             <select asp-for="GenreId" class="form-select form-select-sm" name="genreId"
                     asp-items="@(new SelectList(Model.Genres, "Id", "Name"))">
                 <option value="">— все жанры —</option>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-lg-2">
             <label class="form-label small mb-1" asp-for="TypeId">Тип</label>
             <select asp-for="TypeId" class="form-select form-select-sm" name="typeId"
                     asp-items="@(new SelectList(Model.BookTypes, "Id", "Name"))">
                 <option value="">— все типы —</option>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-lg-2">
             <label class="form-label small mb-1" asp-for="Author">Автор</label>
             <select asp-for="Author" class="form-select form-select-sm" name="author"
                     asp-items="@(new SelectList(Model.Authors))">
                 <option value="">— все авторы —</option>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-6 col-lg-2">
             <label class="form-label small mb-1" asp-for="Year">Год</label>
             <select asp-for="Year" class="form-select form-select-sm" name="year"
                     asp-items="@(new SelectList(Model.Years))">
                 <option value="">— все годы —</option>
             </select>
         </div>
+        <div class="col-6 col-lg-2 d-grid">
+            <button type="submit" class="btn btn-primary btn-sm">Применить фильтры</button>
+        </div>
     </div>
     <div class="mt-2">
         <a asp-page="Index" class="btn btn-secondary btn-sm">Сбросить фильтры</a>
     </div>
+    </div>@* /filtersCollapse *@
 </form>
 
 <!-- Кнопка создания -->
@@ -94,7 +103,7 @@
                         {
                             foreach (var g in book.Genres)
                             {
-                                <span class="badge text-bg-secondary me-1">@g</span>
+                                <span class="badge text-bg-light border me-1">@g</span>
                             }
                         }
                         else
@@ -107,7 +116,7 @@
                         {
                             foreach (var t in book.BookTypes)
                             {
-                                <span class="badge text-bg-info me-1">@t</span>
+                                <span class="badge text-bg-light border me-1">@t</span>
                             }
                         }
                         else
