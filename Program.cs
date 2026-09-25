@@ -2,11 +2,20 @@ using Books.Data;
 using Books.Infrastructure;
 using Books.Validation;
 using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Переключатель режима логирования:
+//   "Serilog:Mode" = "ErrorsOnly" — писать только ошибки (Error и Fatal)
+//   "Serilog:Mode" = "All" (или любое другое значение) — писать весь лог
+// Значение берётся из appsettings.json / appsettings.{Environment}.json,
+// также можно задать через переменную окружения Serilog__Mode=ErrorsOnly.
+var loggingMode = builder.Configuration["Serilog:Mode"];
+var errorsOnly = string.Equals(loggingMode, "ErrorsOnly", StringComparison.OrdinalIgnoreCase);
+
 builder.Host.UseSerilog((context, configuration) => configuration
-    .MinimumLevel.Information()
+    .MinimumLevel.Is(errorsOnly ? LogEventLevel.Error : LogEventLevel.Information)
     .WriteTo.Console()
     .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day));
 
