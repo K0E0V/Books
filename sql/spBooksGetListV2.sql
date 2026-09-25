@@ -27,33 +27,38 @@ BEGIN
     IF @PageNumber < 1 SET @PageNumber = 1;
     IF @PageSize < 1 OR @PageSize > 100 SET @PageSize = 10;
 
+    -- ВАЖНО: CTE (WITH) действует только на ОДИН следующий оператор,
+    -- поэтому вместо CTE используется временная таблица — на неё опираются
+    -- оба набора результатов (страница данных + COUNT для пагинации).
+
     -- Базовая выборка с применением фильтров
-    ;WITH Filtered AS (
-        SELECT
-            b.Id, b.Title, b.Author, b.PublicationYear,
-            b.Isbn, b.Publisher, b.Description, b.CountPages,
-            b.CreatedAt, b.UpdatedAt
-        FROM dbo.tblBooks b
-        WHERE (@Search IS NULL OR @Search = ''
-               OR b.Title    LIKE N'%' + @Search + N'%'
-               OR b.Author   LIKE N'%' + @Search + N'%'
-               OR b.Isbn     LIKE N'%' + @Search + N'%'
-               OR TRY_CAST(b.ContentsXml AS NVARCHAR(MAX)) LIKE N'%' + @Search + N'%')
-          AND (@GenreId IS NULL OR EXISTS (
-                   SELECT 1 FROM dbo.TblBookGenres bg
-                   WHERE bg.BookId = b.Id AND bg.GenreId = @GenreId))
-          AND (@TypeId IS NULL OR EXISTS (
-                   SELECT 1 FROM dbo.TblBookTypes bt
-                   WHERE bt.BookId = b.Id AND bt.TypeId = @TypeId))
-          AND (@Year IS NULL OR b.PublicationYear = @Year)
-          AND (@Author IS NULL OR @Author = '' OR b.Author = @Author)
-    )
+    IF OBJECT_ID('tempdb..#Filtered') IS NOT NULL DROP TABLE #Filtered;
+
+    SELECT
+        b.Id, b.Title, b.Author, b.PublicationYear,
+        b.Isbn, b.Publisher, b.Description, b.CountPages,
+        b.CreatedAt, b.UpdatedAt
+    INTO #Filtered
+    FROM dbo.tblBooks b
+    WHERE (@Search IS NULL OR @Search = ''
+           OR b.Title    LIKE N'%' + @Search + N'%'
+           OR b.Author   LIKE N'%' + @Search + N'%'
+           OR b.Isbn     LIKE N'%' + @Search + N'%'
+           OR TRY_CAST(b.ContentsXml AS NVARCHAR(MAX)) LIKE N'%' + @Search + N'%')
+      AND (@GenreId IS NULL OR EXISTS (
+               SELECT 1 FROM dbo.TblBookGenres bg
+               WHERE bg.BookId = b.Id AND bg.GenreId = @GenreId))
+      AND (@TypeId IS NULL OR EXISTS (
+               SELECT 1 FROM dbo.TblBookTypes bt
+               WHERE bt.BookId = b.Id AND bt.TypeId = @TypeId))
+      AND (@Year IS NULL OR b.PublicationYear = @Year)
+      AND (@Author IS NULL OR @Author = '' OR b.Author = @Author);
 
     -- Первый набор: страница данных (сортировка — безопасный whitelist, без динамического SQL)
     SELECT Id, Title, Author, PublicationYear,
            Isbn, Publisher, Description, CountPages,
            CreatedAt, UpdatedAt
-    FROM Filtered
+    FROM #Filtered
     ORDER BY
         CASE WHEN @SortBy = 'title'  AND @SortDesc = 0 THEN Title END ASC,
         CASE WHEN @SortBy = 'title'  AND @SortDesc = 1 THEN Title END DESC,
@@ -70,6 +75,8 @@ BEGIN
     FETCH NEXT @PageSize ROWS ONLY;
 
     -- Второй набор: общее количество отфильтрованных записей (для пагинации)
-    SELECT COUNT(*) FROM Filtered;
+    SELECT COUNT(*) FROM #Filtered;
+
+    DROP TABLE #Filtered;
 END;
 GO
