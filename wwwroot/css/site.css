@@ -50,3 +50,17 @@ body {
             flex: 2 1 0;
         }
 }
+/* --- Бейджи жанров/типов: гарантированно читаемый текст в любой теме --- */
+.badge.book-badge {
+    color: #212529 !important;      /* тёмный текст вместо белого из .badge */
+    background-color: #f8f9fa !important; /* светлый фон */
+    border: 1px solid #ced4da;
+    font-weight: 600;
+}
+
+/* --- Мобильная версия списка книг: скрываем лишние колонки (ID, ISBN, Издатель) --- */
+@media (max-width: 991.98px) {
+    .books-table .col-hide-mobile {
+        display: none !important;
+    }
+}
