@@ -7,3 +7,6 @@ obj/
 .idea/
 *.user
 *.suo
+
+# Transfer bundles (не коммитить бинарные bundle)
+*.bundle
