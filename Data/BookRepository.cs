@@ -7,7 +7,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Books.Data;
 
-public class BookRepository
+public class BookRepository : IBookRepository
 {
     private readonly string _connectionString;
 

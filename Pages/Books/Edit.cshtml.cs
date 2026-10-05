@@ -9,12 +9,12 @@ namespace Books.Pages.Books;
 
 public class EditModel : PageModel
 {
-    private readonly BookRepository _repo;
+    private readonly IBookRepository _repo;
     private readonly ILogger<EditModel> _logger;
     private readonly IBookEditValidator _validator;
 
     public EditModel(
-        BookRepository repo,
+        IBookRepository repo,
         ILogger<EditModel> logger,
         IBookEditValidator validator)
     {
