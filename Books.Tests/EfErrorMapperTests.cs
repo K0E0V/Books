@@ -103,7 +103,7 @@ public class EfErrorMapperTests
                        ps[8].ParameterType == typeof(Exception);
             });
         var error = errorCtor.Invoke(new object[]
-            { number, (byte)0, (byte)10, "server", message, "procedure", 1, 0, null });
+            { number, (byte)0, (byte)10, "server", message, "procedure", 1, 0, (Exception?)null });
 
         var collection = (SqlErrorCollection)Activator.CreateInstance(errorsType, nonPublic: true)!;
         var addMethod = errorsType.GetMethod("Add",
@@ -117,7 +117,7 @@ public class EfErrorMapperTests
             new[] { typeof(string), typeof(SqlErrorCollection), typeof(Exception), typeof(Guid) },
             null);
         Assert.NotNull(ctorSql);
-        var sqlEx = (SqlException)ctorSql!.Invoke(new object[] { message, collection, null, Guid.NewGuid() });
+        var sqlEx = (SqlException)ctorSql!.Invoke(new object[] { message, collection, (Exception?)null, Guid.NewGuid() });
         Assert.Equal(number, sqlEx.Number); // sanity: номер ошибки действительно прокинулся
         return sqlEx;
     }

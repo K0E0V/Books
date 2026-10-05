@@ -23,8 +23,8 @@ public interface IBookRepository
         string? sortBy = null,
         bool sortDesc = false);
 
-    [Obsolete("Оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами.")]
-    Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10);
+    // SearchAsync удалён (Этап 4 ТЗ docs/ORM_MIGRATION_TZ.md): ни одна страница
+    // не вызывал метод — Index использует GetAllAsync со структурированными фильтрами.
 
     Task<List<string>> GetAuthorsAsync();
     Task<List<int>> GetYearsAsync();

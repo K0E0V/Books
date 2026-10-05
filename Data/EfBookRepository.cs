@@ -69,12 +69,6 @@ public class EfBookRepository : IBookRepository
         return (books, totalCount);
     }
 
-#pragma warning disable CS0618 // SearchAsync помечен [Obsolete] в контракте для обратной совместимости
-    [Obsolete("Оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами.")]
-    public Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10)
-        => GetAllAsync(pageNumber, pageSize, search: searchTerm);
-#pragma warning restore CS0618
-
     public async Task<List<string>> GetAuthorsAsync() =>
         await _db.Books.AsNoTracking()
             .Where(b => b.Author != null && b.Author != "")
