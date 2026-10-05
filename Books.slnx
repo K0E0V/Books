@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="Books.csproj" />
+  <Project Path="Books.csproj">
+    <!-- Тесты не должны тянуться в сборку основного проекта -->
+  </Project>
+  <Project Path="Books.Tests/Books.Tests.csproj" />
 </Solution>

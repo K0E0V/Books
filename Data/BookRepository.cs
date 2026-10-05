@@ -7,7 +7,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Books.Data;
 
-public class BookRepository
+public class BookRepository : IBookRepository
 {
     private readonly string _connectionString;
 
@@ -189,26 +189,8 @@ public class BookRepository
         return (books, totalCount);
     }
 
-    // Поиск книг (оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами)
-    public async Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10)
-    {
-        using var connection = new SqlConnection(_connectionString);
-        var parameters = new { Search = searchTerm, PageNumber = pageNumber, PageSize = pageSize };
-
-        using var multi = await connection.QueryMultipleAsync(
-            "dbo.spBooksSearch",
-            parameters,
-            commandType: CommandType.StoredProcedure);
-
-        var books = (await multi.ReadAsync<Book>()).ToList();
-        var totalCount = await multi.ReadFirstAsync<int>();
-
-        multi.Dispose(); // закрываем DataReader до следующих запросов на этом соединении
-
-        await AttachGenresAndTypesAsync(connection, books);
-
-        return (books, totalCount);
-    }
+    // SearchAsync удалён (Этап 4 ТЗ docs/ORM_MIGRATION_TZ.md): метод не вызывался
+    // ни одной страницей; Index использует GetAllAsync со структурированными фильтрами.
 
     // Список авторов для фильтра (из таблицы книг, без дублей)
     public async Task<List<string>> GetAuthorsAsync()

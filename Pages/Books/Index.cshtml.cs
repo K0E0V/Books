@@ -7,9 +7,9 @@ namespace Books.Pages.Books;
 
 public class IndexModel : PageModel
 {
-    private readonly BookRepository _repo;
+    private readonly IBookRepository _repo;
 
-    public IndexModel(BookRepository repo)
+    public IndexModel(IBookRepository repo)
     {
         _repo = repo;
     }
