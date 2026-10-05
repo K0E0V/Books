@@ -1,0 +1,2319 @@
+From 24ebaabede1b01c60a9fe06564d8212e528a6167 Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Mon, 5 Oct 2026 07:58:47 +0000
+Subject: [PATCH 2/2] =?UTF-8?q?test:=20xUnit-=D0=BF=D1=80=D0=BE=D0=B5?=
+ =?UTF-8?q?=D0=BA=D1=82=20Books.Tests=20(=D0=BA=D0=BE=D0=BD=D0=B2=D0=B5?=
+ =?UTF-8?q?=D1=80=D1=82=D0=B5=D1=80=20XML,=20=D0=BC=D0=B0=D0=BF=D0=BF?=
+ =?UTF-8?q?=D0=B5=D1=80=20=D0=BE=D1=88=D0=B8=D0=B1=D0=BE=D0=BA)=20+=20READ?=
+ =?UTF-8?q?ME=20=D1=81=20=D1=87=D0=B5=D0=BA-=D0=BB=D0=B8=D1=81=D1=82=D0=BE?=
+ =?UTF-8?q?=D0=BC=20=D1=80=D1=83=D1=87=D0=BD=D0=BE=D0=B9=20=D0=B2=D0=B5?=
+ =?UTF-8?q?=D1=80=D0=B8=D1=84=D0=B8=D0=BA=D0=B0=D1=86=D0=B8=D0=B8=20(?=
+ =?UTF-8?q?=D0=AD=D1=82=D0=B0=D0=BF=205=20=D0=A2=D0=97)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .gitignore                                    |  10 +-
+ Books.Tests/Books.Tests.csproj                |  23 ++
+ Books.Tests/ContentsXmlConverterTests.cs      |  95 +++++
+ Books.Tests/EfErrorMapperTests.cs             | 124 ++++++
+ Books.Tests/GlobalUsings.cs                   |   1 +
+ Books.Tests/README.md                         |  38 ++
+ Books.csproj                                  |   7 +
+ Books.slnx                                    |   5 +-
+ Data/BookLibraryContext.cs                    | 124 ++++++
+ Data/BookRepository.cs                        |   2 +-
+ Data/ContentsXmlConverter.cs                  |  82 ++++
+ Data/DesignTimeDbContextFactory.cs            |  30 ++
+ Data/EfBookRepository.cs                      | 389 ++++++++++++++++++
+ Data/EfErrorMapper.cs                         |  52 +++
+ Data/Entities.cs                              |  68 +++
+ Data/IBookRepository.cs                       |  46 +++
+ ...61005074742_InitialBooksSchema.Designer.cs | 245 +++++++++++
+ .../20261005074742_InitialBooksSchema.cs      | 186 +++++++++
+ Migrations/BookLibraryContextModelSnapshot.cs | 242 +++++++++++
+ Pages/About.cshtml.cs                         |   4 +-
+ Pages/Books/Create.cshtml.cs                  |   4 +-
+ Pages/Books/Delete.cshtml.cs                  |   4 +-
+ Pages/Books/Details.cshtml.cs                 |   4 +-
+ Pages/Books/Edit.cshtml.cs                    |   4 +-
+ Pages/Books/Index.cshtml.cs                   |   4 +-
+ Program.cs                                    |  23 +-
+ appsettings.json                              |   9 +-
+ sql/Migrations_InitialBooksSchema.sql         | 180 ++++++++
+ 28 files changed, 1982 insertions(+), 23 deletions(-)
+ create mode 100644 Books.Tests/Books.Tests.csproj
+ create mode 100644 Books.Tests/ContentsXmlConverterTests.cs
+ create mode 100644 Books.Tests/EfErrorMapperTests.cs
+ create mode 100644 Books.Tests/GlobalUsings.cs
+ create mode 100644 Books.Tests/README.md
+ create mode 100644 Data/BookLibraryContext.cs
+ create mode 100644 Data/ContentsXmlConverter.cs
+ create mode 100644 Data/DesignTimeDbContextFactory.cs
+ create mode 100644 Data/EfBookRepository.cs
+ create mode 100644 Data/EfErrorMapper.cs
+ create mode 100644 Data/Entities.cs
+ create mode 100644 Data/IBookRepository.cs
+ create mode 100644 Migrations/20261005074742_InitialBooksSchema.Designer.cs
+ create mode 100644 Migrations/20261005074742_InitialBooksSchema.cs
+ create mode 100644 Migrations/BookLibraryContextModelSnapshot.cs
+ create mode 100644 sql/Migrations_InitialBooksSchema.sql
+
+diff --git a/.gitignore b/.gitignore
+index cfa61fd..ae0cb2f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1 +1,9 @@
+-(empty)
+\ No newline at end of file
++# .NET Build Artifacts
++bin/
++obj/
++
++# IDE/Editor Settings
++.vscode/
++.idea/
++*.user
++*.suo
+\ No newline at end of file
+diff --git a/Books.Tests/Books.Tests.csproj b/Books.Tests/Books.Tests.csproj
+new file mode 100644
+index 0000000..3eb0241
+--- /dev/null
++++ b/Books.Tests/Books.Tests.csproj
+@@ -0,0 +1,23 @@
++<Project Sdk="Microsoft.NET.Sdk">
++
++  <PropertyGroup>
++    <TargetFramework>net8.0</TargetFramework>
++    <Nullable>enable</Nullable>
++    <ImplicitUsings>enable</ImplicitUsings>
++    <IsPackable>false</IsPackable>
++  </PropertyGroup>
++
++  <ItemGroup>
++    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
++    <PackageReference Include="xunit" Version="2.9.2" />
++    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
++      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
++      <PrivateAssets>all</PrivateAssets>
++    </PackageReference>
++  </ItemGroup>
++
++  <ItemGroup>
++    <ProjectReference Include="..\Books.csproj" />
++  </ItemGroup>
++
++</Project>
+diff --git a/Books.Tests/ContentsXmlConverterTests.cs b/Books.Tests/ContentsXmlConverterTests.cs
+new file mode 100644
+index 0000000..3ce0d27
+--- /dev/null
++++ b/Books.Tests/ContentsXmlConverterTests.cs
+@@ -0,0 +1,95 @@
++using Books.Data;
++using Books.Models;
++
++namespace Books.Tests;
++
++/// <summary>
++/// Критерий приёмки №2 ТЗ (docs/ORM_MIGRATION_TZ.md, п. 6):
++/// round-trip List&lt;Chapter&gt; → XML → List&lt;Chapter&gt; без потерь,
++/// формат совместим с .nodes() старых ХП (spBooksGetByIdV3).
++/// </summary>
++public class ContentsXmlConverterTests
++{
++    [Fact]
++    public void ToXml_EmptyOrNull_ReturnsEmptyBookContents()
++    {
++        Assert.Equal(ContentsXmlConverter.EmptyXml, ContentsXmlConverter.ToXml(null));
++        Assert.Equal(ContentsXmlConverter.EmptyXml, ContentsXmlConverter.ToXml(new List<Chapter>()));
++    }
++
++    [Fact]
++    public void ToXml_ProducesOldStoredProcFormat()
++    {
++        var chapters = new List<Chapter>
++        {
++            new() { Number = 1, Title = "Введение", StartPage = 1, EndPage = 10 },
++            new() { Number = 2, Title = "Основная часть", StartPage = 11, EndPage = 100 },
++        };
++
++        var xml = ContentsXmlConverter.ToXml(chapters);
++
++        // Формат для spBooksGetByIdV3 (.nodes('/BookContents/Chapter')):
++        // корневой элемент + по одному <Chapter .../> на строку.
++        Assert.StartsWith("<BookContents>", xml);
++        Assert.EndsWith("</BookContents>", xml.TrimEnd());
++        Assert.Contains("<Chapter number=\"1\" title=\"Введение\" startPage=\"1\" endPage=\"10\" />", xml);
++        Assert.Contains("<Chapter number=\"2\" title=\"Основная часть\" startPage=\"11\" endPage=\"100\" />", xml);
++    }
++
++    [Fact]
++    public void RoundTrip_PreservesAllFields()
++    {
++        var chapters = new List<Chapter>
++        {
++            new() { Number = 1, Title = "Глава \"в кавычках\" & спец<символы>", StartPage = 1, EndPage = 5 },
++            new() { Number = 42, Title = "", StartPage = 0, EndPage = 0 },
++            new() { Number = int.MaxValue, Title = "Финал", StartPage = 300, EndPage = 320 },
++        };
++
++        var restored = ContentsXmlConverter.FromXml(ContentsXmlConverter.ToXml(chapters));
++
++        Assert.Equal(chapters.Count, restored.Count);
++        for (var i = 0; i < chapters.Count; i++)
++        {
++            Assert.Equal(chapters[i].Number, restored[i].Number);
++            Assert.Equal(chapters[i].Title, restored[i].Title);
++            Assert.Equal(chapters[i].StartPage, restored[i].StartPage);
++            Assert.Equal(chapters[i].EndPage, restored[i].EndPage);
++        }
++    }
++
++    [Fact]
++    public void FromXml_NullOrBroken_ReturnsEmptyList()
++    {
++        Assert.Empty(ContentsXmlConverter.FromXml(null));
++        Assert.Empty(ContentsXmlConverter.FromXml(""));
++        Assert.Empty(ContentsXmlConverter.FromXml("это не xml <<<"));
++    }
++
++    [Fact]
++    public void FromXml_NonNumericAttributes_DefaultsToZero()
++    {
++        const string xml = "<BookContents><Chapter number=\"abc\" title=\"X\" startPage=\"zz\" endPage=\"7\"/></BookContents>";
++
++        var chapters = ContentsXmlConverter.FromXml(xml);
++
++        Assert.Single(chapters);
++        Assert.Equal(0, chapters[0].Number);
++        Assert.Equal(0, chapters[0].StartPage);
++        Assert.Equal(7, chapters[0].EndPage);
++    }
++
++    [Fact]
++    public void ToXml_AboveSizeLimit_Throws()
++    {
++        var huge = new List<Chapter>();
++        var filler = new string('А', 200);
++        while (ContentsXmlConverter.EmptyXml.Length == 0 || true)
++        {
++            huge.Add(new Chapter { Number = huge.Count + 1, Title = filler, StartPage = 1, EndPage = 2 });
++            if (huge.Count * filler.Length > ContentsXmlConverter.MaxXmlLength) break;
++        }
++
++        Assert.Throws<InvalidOperationException>(() => ContentsXmlConverter.ToXml(huge));
++    }
++}
+diff --git a/Books.Tests/EfErrorMapperTests.cs b/Books.Tests/EfErrorMapperTests.cs
+new file mode 100644
+index 0000000..b40464a
+--- /dev/null
++++ b/Books.Tests/EfErrorMapperTests.cs
+@@ -0,0 +1,124 @@
++using System.Xml.Linq;
++using Books.Data;
++using Microsoft.Data.SqlClient;
++using Microsoft.EntityFrameworkCore;
++
++namespace Books.Tests;
++
++/// <summary>
++/// Критерий приёмки №3 ТЗ: таблица соответствия «ошибка БД → OperationCode»
++/// зафиксирована в EfErrorMapper и покрыта тестами (п. 3.4.1).
++/// Реальные SqlException не конструируются из кода (нет публичного ctor), поэтому
++/// проверка идёт по двум слоям: чистый regex-маппинг текстов ошибок SQL Server +
++/// интеграция с DbUpdateException на фейковом внутреннем исключении.
++/// </summary>
++public class EfErrorMapperTests
++{
++    // ===== Regex-слой: тексты реальных ошибок SQL Server =====
++
++    [Theory]
++    [InlineData("Violation of UNIQUE KEY constraint 'UX_TblBooks_Isbn'. Cannot insert duplicate key in object 'dbo.tblBooks'. The duplicate key value is (978-5-...).")]
++    [InlineData("Cannot insert duplicate key row in object 'dbo.tblBooks' with unique index 'UX_TblBooks_Isbn'. The duplicate key value is (978-1-2345-6789-7).")]
++    [InlineData("Violation of PRIMARY KEY constraint 'PK_tblBooks'. Cannot insert duplicate key in object 'dbo.tblBooks'.")]
++    public void DuplicateKeyMessages_Recognized(string message)
++    {
++        Assert.True(EfErrorMapper.IsDuplicateKeyMessage(message));
++    }
++
++    [Theory]
++    [InlineData("The INSERT statement conflicted with the FOREIGN KEY constraint \"FK_tblBooks_Publisher\".")]
++    [InlineData("Transaction (Process ID 52) was deadlocked on lock resources with another process.")]
++    public void NonDuplicateMessages_NotRecognizedAsDuplicate(string message)
++    {
++        Assert.False(EfErrorMapper.IsDuplicateKeyMessage(message));
++    }
++
++    // ===== Интеграционный слой: DbUpdateException → внутренний exception =====
++
++    private static DbUpdateException Wrap(Exception inner) =>
++        new("SaveChanges failed", inner);
++
++    [Fact]
++    public void IsDuplicateKey_InnerMessageMatchesRegex_True()
++    {
++        var inner = new InvalidOperationException(
++            "SqlException: Cannot insert duplicate key row in object 'dbo.tblBooks' with unique index 'UX_TblBooks_Isbn'.");
++        Assert.True(EfErrorMapper.IsDuplicateKey(Wrap(inner)));
++    }
++
++    [Fact]
++    public void IsDuplicateKey_NestedInner_True()
++    {
++        // EF иногда оборачивает ошибку в несколько уровней
++        var deepest = new Exception("Violation of UNIQUE KEY constraint 'UX_TblBooks_Isbn'. Cannot insert duplicate key...");
++        var middle = new InvalidOperationException("wrapper", deepest);
++        Assert.True(EfErrorMapper.IsDuplicateKey(Wrap(middle)));
++    }
++
++    [Fact]
++    public void IsForeignKeyViolation_Number547_True()
++    {
++        var sqlEx = CreateSqlException(547,
++            "The DELETE statement conflicted with the REFERENCE constraint \"FK_tblBookGenres\".");
++        var ex = Wrap(sqlEx);
++        Assert.True(EfErrorMapper.IsForeignKeyViolation(ex));
++        Assert.False(EfErrorMapper.IsDuplicateKey(ex));
++    }
++
++    [Fact]
++    public void OtherErrors_MapToNeither()
++    {
++        var sqlEx = CreateSqlException(1205,
++            "Transaction (Process ID 52) was deadlocked on lock resources with another process and has been chosen as the deadlock victim.");
++        var ex = Wrap(sqlEx);
++        Assert.False(EfErrorMapper.IsDuplicateKey(ex));
++        Assert.False(EfErrorMapper.IsForeignKeyViolation(ex));
++    }
++
++    [Fact]
++    public void NonSqlInnerException_ReturnsFalse()
++    {
++        var ex = Wrap(new InvalidOperationException("not sql"));
++        Assert.False(EfErrorMapper.IsDuplicateKey(ex));
++        Assert.False(EfErrorMapper.IsForeignKeyViolation(ex));
++    }
++
++    /// <summary>
++    /// SqlException в Microsoft.Data.SqlClient 7.x создаётся только приватным
++    /// ctor (string, SqlErrorCollection, Exception, Guid); Number берётся из
++    /// первого элемента errorCollection, поэтому коллекцию заполняем рефлексией.
++    /// </summary>
++    private static SqlException CreateSqlException(int number, string message)
++    {
++        var errorsType = typeof(SqlErrorCollection);
++        var errorCtor = typeof(SqlError).GetConstructors(
++                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
++            .First(c =>
++            {
++                var ps = c.GetParameters();
++                return ps.Length == 9 &&
++                       ps[0].ParameterType == typeof(int) &&
++                       ps[1].ParameterType == typeof(byte) &&
++                       ps[2].ParameterType == typeof(byte) &&
++                       ps[8].ParameterType == typeof(Exception);
++            });
++        var error = errorCtor.Invoke(new object[]
++            { number, (byte)0, (byte)10, "server", message, "procedure", 1, 0, null });
++
++        var collection = (SqlErrorCollection)Activator.CreateInstance(errorsType, nonPublic: true)!;
++        var addMethod = errorsType.GetMethod("Add",
++            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
++        Assert.NotNull(addMethod);
++        addMethod!.Invoke(collection, new[] { error });
++
++        var ctorSql = typeof(SqlException).GetConstructor(
++            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
++            null,
++            new[] { typeof(string), typeof(SqlErrorCollection), typeof(Exception), typeof(Guid) },
++            null);
++        Assert.NotNull(ctorSql);
++        var sqlEx = (SqlException)ctorSql!.Invoke(new object[] { message, collection, null, Guid.NewGuid() });
++        Assert.Equal(number, sqlEx.Number); // sanity: номер ошибки действительно прокинулся
++        return sqlEx;
++    }
++}
+diff --git a/Books.Tests/GlobalUsings.cs b/Books.Tests/GlobalUsings.cs
+new file mode 100644
+index 0000000..c802f44
+--- /dev/null
++++ b/Books.Tests/GlobalUsings.cs
+@@ -0,0 +1 @@
++global using Xunit;
+diff --git a/Books.Tests/README.md b/Books.Tests/README.md
+new file mode 100644
+index 0000000..ef44ad0
+--- /dev/null
++++ b/Books.Tests/README.md
+@@ -0,0 +1,38 @@
++# Books.Tests — тесты перехода на EF Core (ТЗ docs/ORM_MIGRATION_TZ.md, п. 8)
++
++## Что уже автоматизировано (`dotnet test`, без Docker и SQL Server)
++| Файл | Покрывает критерий приёмки ТЗ (п. 6) |
++|---|---|
++| `ContentsXmlConverterTests.cs` | №2: round-trip оглавления ⇄ XML-колонка, формат совместим с `.nodes()` старых ХП |
++| `EfErrorMapperTests.cs` | №3: таблица «ошибка БД → OperationCode» (2627/2601 → Duplicate, 547 → FK) |
++
++## Что нужно проверить вручную на вашей машине (Этап 5 «Верификация»)
++Автотесты выше не требуют подключения к БД. Остальные критерии приёмки проверяются
++на реальном SQL Server — это ваш локальный `WIN-MJ28NJOK5GH` или Testcontainers.
++
++### Вариант A — локальная SQL Server (быстрее)
++1. **Бэкап**: в SSMS правая кнопка на базе `Books` → Tasks → Back Up… (обязательно!).
++2. Из папки репозитория применить схему (если ещё не применена):
++   ```powershell
++   dotnet ef database update --project Books.csproj
++   # либо скриптом: sql/Migrations_InitialBooksSchema.sql в SSMS
++   ```
++3. Seed-данные: выполнить `sql/InsertSampleBooks.sql`.
++4. Запустить приложение: `dotnet run` (в `appsettings.json` стоит `"Data": { "UseEfRepository": true }`).
++5. Пройти чек-лист UI:
++   - [ ] Список книг: фильтры (жанр, тип, год, автор), сортировки, пагинация — совпадают с поведением до миграции;
++   - [ ] Создание книги с оглавлением → открыть карточку: главы на месте (round-trip через колонку xml);
++   - [ ] Дубликат ISBN при сохранении → сообщение об ошибке (OperationCode.Duplicate), а не падение;
++   - [ ] Удаление книги; редактирование жанров/типов (M:N обновляется целиком);
++   - [ ] Страница «О библиотеке»: статистика за последние сутки корректна (исправлен баг UTC);
++   - [ ] Откат: поменять `"UseEfRepository": false`, перезапустить — всё работает через старый Dapper+ХП путь.
++
++### Вариант B — Testcontainers (для CI, нужен Docker Desktop)
++Интеграционный проект пока не создан (см. ТЗ п. 8). При необходимости добавляем:
++`mcr.microsoft.com/mssql/server:2022-latest` + накатка миграций + seed из `InsertSampleBooks.sql`.
++
++## Полезные команды
++```powershell
++dotnet test                       # юнит-тесты (без БД)
++dotnet ef migrations list         # состояние схемы
++```
+diff --git a/Books.csproj b/Books.csproj
+index 9b0a1a9..51fd962 100644
+--- a/Books.csproj
++++ b/Books.csproj
+@@ -4,11 +4,18 @@
+     <TargetFramework>net8.0</TargetFramework>
+     <Nullable>enable</Nullable>
+     <ImplicitUsings>enable</ImplicitUsings>
++    <!-- Тесты вынесены в Books.Tests (отдельный проект) -->
++    <DefaultItemExcludes>$(DefaultItemExcludes);Books.Tests\**</DefaultItemExcludes>
+   </PropertyGroup>
+ 
+   <ItemGroup>
+     <PackageReference Include="Dapper" Version="2.1.86" />
+     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0" />
++    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.20">
++      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
++      <PrivateAssets>all</PrivateAssets>
++    </PackageReference>
++    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.20" />
+     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+   </ItemGroup>
+ 
+diff --git a/Books.slnx b/Books.slnx
+index 8b8d10b..19dbe93 100644
+--- a/Books.slnx
++++ b/Books.slnx
+@@ -1,3 +1,6 @@
+ <Solution>
+-  <Project Path="Books.csproj" />
++  <Project Path="Books.csproj">
++    <!-- Тесты не должны тянуться в сборку основного проекта -->
++  </Project>
++  <Project Path="Books.Tests/Books.Tests.csproj" />
+ </Solution>
+diff --git a/Data/BookLibraryContext.cs b/Data/BookLibraryContext.cs
+new file mode 100644
+index 0000000..1adb5b4
+--- /dev/null
++++ b/Data/BookLibraryContext.cs
+@@ -0,0 +1,124 @@
++using Microsoft.EntityFrameworkCore;
++
++namespace Books.Data;
++
++/// <summary>
++/// EF Core DbContext поверх существующей БД books (database-first).
++/// Маппинг повторяет схему из sql/StructureBD без пересоздания таблиц
++/// (docs/ORM_MIGRATION_TZ.md, п. 3.1).
++/// </summary>
++public class BookLibraryContext : DbContext
++{
++    public BookLibraryContext(DbContextOptions<BookLibraryContext> options)
++        : base(options)
++    {
++    }
++
++    public DbSet<BookEntity> Books => Set<BookEntity>();
++    public DbSet<GenreEntity> Genres => Set<GenreEntity>();
++    public DbSet<BookTypeEntity> BookTypes => Set<BookTypeEntity>();
++    public DbSet<PublisherEntity> Publishers => Set<PublisherEntity>();
++    public DbSet<BookGenreLink> BookGenres => Set<BookGenreLink>();
++    public DbSet<BookTypeLink> BookTypeLinks => Set<BookTypeLink>();
++
++    protected override void OnModelCreating(ModelBuilder modelBuilder)
++    {
++        // ===== dbo.tblBooks =====
++        modelBuilder.Entity<BookEntity>(e =>
++        {
++            e.ToTable("tblBooks");
++            e.HasKey(b => b.Id);
++            e.Property(b => b.Id).UseIdentityColumn();
++
++            e.Property(b => b.Title).HasMaxLength(300).IsRequired();
++            e.Property(b => b.Author).HasMaxLength(250).IsRequired();
++            e.Property(b => b.PublicationYear).IsRequired();
++            e.Property(b => b.Isbn).HasMaxLength(20);
++            e.Property(b => b.Publisher).HasMaxLength(250);
++            e.Property(b => b.Description).HasMaxLength(4000);
++            e.Property(b => b.CountPages).IsRequired();
++
++            // Колонка xml: string-свойство + явный тип столбца (ТЗ п. 3.2, вариант A)
++            e.Property(b => b.ContentsXmlRaw)
++                .HasColumnName("ContentsXml")
++                .HasColumnType("xml")
++                .IsRequired();
++
++            e.Property(b => b.CreatedAt).HasDefaultValueSql("sysutcdatetime()");
++            e.Property(b => b.UpdatedAt).HasDefaultValueSql("sysutcdatetime()");
++
++            // UX_TblBooks_Isbn — filtered unique index (WHERE Isbn IS NOT NULL)
++            e.HasIndex(b => b.Isbn)
++                .IsUnique()
++                .HasDatabaseName("UX_TblBooks_Isbn")
++                .HasFilter("[Isbn] IS NOT NULL");
++
++            e.HasIndex(b => new { b.Title, b.Author })
++                .HasDatabaseName("IX_Books_Title_Author");
++        });
++
++        // ===== dbo.TblGenres =====
++        modelBuilder.Entity<GenreEntity>(e =>
++        {
++            e.ToTable("TblGenres");
++            e.HasKey(g => g.Id);
++            e.Property(g => g.Id).UseIdentityColumn();
++            e.Property(g => g.Name).HasMaxLength(100).IsRequired();
++            e.HasIndex(g => g.Name).IsUnique().HasDatabaseName("UX_TblGenres_Name");
++        });
++
++        // ===== dbo.TblTypes =====
++        modelBuilder.Entity<BookTypeEntity>(e =>
++        {
++            e.ToTable("TblTypes");
++            e.HasKey(t => t.Id);
++            e.Property(t => t.Id).UseIdentityColumn();
++            e.Property(t => t.Name).HasMaxLength(100).IsRequired();
++            e.HasIndex(t => t.Name).IsUnique().HasDatabaseName("UX_TblTypes_Name");
++        });
++
++        // ===== dbo.TblPublishers =====
++        modelBuilder.Entity<PublisherEntity>(e =>
++        {
++            e.ToTable("TblPublishers");
++            e.HasKey(p => p.Id);
++            e.Property(p => p.Id).UseIdentityColumn();
++            e.Property(p => p.Name).HasMaxLength(200).IsRequired();
++            e.HasIndex(p => p.Name).IsUnique().HasDatabaseName("UX_TblPublishers_Name");
++        });
++
++        // ===== dbo.TblBookGenres (M:N через явную join-сущность) =====
++        modelBuilder.Entity<BookGenreLink>(e =>
++        {
++            e.ToTable("TblBookGenres");
++            e.HasKey(x => new { x.BookId, x.GenreId });
++
++            e.HasOne(x => x.Book)
++                .WithMany(b => b.GenreLinks)
++                .HasForeignKey(x => x.BookId)
++                .OnDelete(DeleteBehavior.Cascade);
++
++            e.HasOne(x => x.Genre)
++                .WithMany(g => g.BookLinks)
++                .HasForeignKey(x => x.GenreId)
++                .OnDelete(DeleteBehavior.Cascade);
++        });
++
++        // ===== dbo.TblBookTypes (M:N через явную join-сущность) =====
++        modelBuilder.Entity<BookTypeLink>(e =>
++        {
++            e.ToTable("TblBookTypes");
++            e.HasKey(x => new { x.BookId, x.TypeId });
++
++            e.HasOne(x => x.Book)
++                .WithMany(b => b.TypeLinks)
++                .HasForeignKey(x => x.BookId)
++                .OnDelete(DeleteBehavior.Cascade);
++
++            e.HasOne(x => x.Type)
++                .WithMany(t => t.BookLinks)
++                .HasForeignKey(x => x.TypeId)
++                .OnDelete(DeleteBehavior.Cascade);
++        });
++    }
++}
+diff --git a/Data/BookRepository.cs b/Data/BookRepository.cs
+index f8b232f..8a6e8b7 100644
+--- a/Data/BookRepository.cs
++++ b/Data/BookRepository.cs
+@@ -7,7 +7,7 @@ using Microsoft.Data.SqlClient;
+ 
+ namespace Books.Data;
+ 
+-public class BookRepository
++public class BookRepository : IBookRepository
+ {
+     private readonly string _connectionString;
+ 
+diff --git a/Data/ContentsXmlConverter.cs b/Data/ContentsXmlConverter.cs
+new file mode 100644
+index 0000000..42aec13
+--- /dev/null
++++ b/Data/ContentsXmlConverter.cs
+@@ -0,0 +1,82 @@
++using System.Xml.Linq;
++using Books.Models;
++
++namespace Books.Data;
++
++/// <summary>
++/// Конвертер оглавления книги: List&lt;Chapter&gt; ⇄ XML колонки dbo.tblBooks.ContentsXml.
++/// Формат сохраняется совместимым с существующими ХП (spBooksGetByIdV3 c .nodes()):
++/// &lt;BookContents&gt;&lt;Chapter number="1" title="..." startPage="1" endPage="10"/&gt;&lt;/BookContents&gt;
++/// Экранирование спецсимволов выполняет XDocument (замена ручного SecurityElement.Escape).
++/// См. docs/ORM_MIGRATION_TZ.md, п. 3.2 (вариант A).
++/// </summary>
++public static class ContentsXmlConverter
++{
++    public const string EmptyXml = "<BookContents></BookContents>";
++
++    /// Максимальный размер XML оглавления, символов (страховка от раздувания колонки xml, см. ТЗ п. 7).
++    public const int MaxXmlLength = 64 * 1024;
++
++    public static string ToXml(List<Chapter>? chapters)
++    {
++        if (chapters == null || chapters.Count == 0)
++            return EmptyXml;
++
++        var root = new XElement("BookContents");
++        foreach (var ch in chapters)
++        {
++            root.Add(new XElement("Chapter",
++                new XAttribute("number", ch.Number),
++                new XAttribute("title", ch.Title ?? string.Empty),
++                new XAttribute("startPage", ch.StartPage),
++                new XAttribute("endPage", ch.EndPage)));
++        }
++
++        // Совпадение с форматом старого GenerateXmlFromChapters: по элементу на строку.
++        var sb = new System.Text.StringBuilder();
++        sb.AppendLine("<BookContents>");
++        foreach (var el in root.Elements())
++            sb.AppendLine("  " + OneLine(el));
++        sb.Append("</BookContents>");
++
++        var xml = sb.ToString();
++        if (xml.Length > MaxXmlLength)
++            throw new InvalidOperationException(
++                $"Оглавление слишком большое ({xml.Length} символов, лимит {MaxXmlLength}).");
++        return xml;
++    }
++
++    public static List<Chapter> FromXml(string? xml)
++    {
++        var result = new List<Chapter>();
++        if (string.IsNullOrWhiteSpace(xml)) return result;
++
++        XDocument doc;
++        try
++        {
++            doc = XDocument.Parse(xml);
++        }
++        catch
++        {
++            return result; // повреждённый XML — читаем как пустое оглавление (см. поведение старых ХП)
++        }
++
++        foreach (var el in doc.Root?.Elements("Chapter") ?? Enumerable.Empty<XElement>())
++        {
++            result.Add(new Chapter
++            {
++                Number = AttrInt(el, "number"),
++                Title = (string?)el.Attribute("title") ?? string.Empty,
++                StartPage = AttrInt(el, "startPage"),
++                EndPage = AttrInt(el, "endPage"),
++            });
++        }
++        return result;
++    }
++
++    private static int AttrInt(XElement el, string name) =>
++        int.TryParse((string?)el.Attribute(name), out var v) ? v : 0;
++
++    private static string OneLine(XElement el) =>
++        el.ToString(SaveOptions.DisableFormatting);
++}
+diff --git a/Data/DesignTimeDbContextFactory.cs b/Data/DesignTimeDbContextFactory.cs
+new file mode 100644
+index 0000000..6f08e61
+--- /dev/null
++++ b/Data/DesignTimeDbContextFactory.cs
+@@ -0,0 +1,30 @@
++using Microsoft.EntityFrameworkCore;
++using Microsoft.EntityFrameworkCore.Design;
++
++namespace Books.Data;
++
++/// <summary>
++/// Фабрика DbContext для инструментов EF Core CLI (dotnet ef migrations/scripts)
++/// без подъёма всего приложения. Строка подключения — из appsettings.json,
++/// как в Program.cs.
++/// </summary>
++public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<BookLibraryContext>
++{
++    public BookLibraryContext CreateDbContext(string[] args)
++    {
++        var configuration = new ConfigurationBuilder()
++            .SetBasePath(Directory.GetCurrentDirectory())
++            .AddJsonFile("appsettings.json", optional: true)
++            .AddJsonFile("appsettings.Development.json", optional: true)
++            .Build();
++
++        var connectionString = configuration.GetConnectionString("DefaultConnection")
++            ?? "Server=localhost;Database=books;Trusted_Connection=True;TrustServerCertificate=True;";
++
++        var options = new DbContextOptionsBuilder<BookLibraryContext>()
++            .UseSqlServer(connectionString)
++            .Options;
++
++        return new BookLibraryContext(options);
++    }
++}
+diff --git a/Data/EfBookRepository.cs b/Data/EfBookRepository.cs
+new file mode 100644
+index 0000000..59c0b8d
+--- /dev/null
++++ b/Data/EfBookRepository.cs
+@@ -0,0 +1,389 @@
++using Books.Models;
++using Microsoft.EntityFrameworkCore;
++
++namespace Books.Data;
++
++/// <summary>
++/// Реализация IBookRepository на EF Core 8 (Этапы 1–4 ТЗ docs/ORM_MIGRATION_TZ.md).
++/// Публичный API идентичен Dapper-реализации <see cref="BookRepository"/>,
++/// поэтому Razor Pages переключаются только смене реализации в DI (+feature-flag).
++/// </summary>
++public class EfBookRepository : IBookRepository
++{
++    private readonly BookLibraryContext _db;
++
++    public EfBookRepository(BookLibraryContext db)
++    {
++        _db = db;
++    }
++
++    // ===== ЧТЕНИЕ =====
++
++    public async Task<(Book? Book, List<Chapter> Chapters)> GetByIdWithChaptersAsync(int id)
++    {
++        var entity = await _db.Books
++            .AsNoTracking()
++            .Include(b => b.GenreLinks)
++                .ThenInclude(l => l.Genre)
++            .Include(b => b.TypeLinks)
++                .ThenInclude(l => l.Type)
++            .FirstOrDefaultAsync(b => b.Id == id);
++
++        if (entity is null)
++            return (null, new List<Chapter>());
++
++        var book = ToModel(entity);
++        var chapters = ContentsXmlConverter.FromXml(entity.ContentsXmlRaw);
++        return (book, chapters);
++    }
++
++    public async Task<(List<Book> Books, int TotalCount)> GetAllAsync(
++        int pageNumber = 1,
++        int pageSize = 10,
++        string? search = null,
++        int? genreId = null,
++        int? typeId = null,
++        int? year = null,
++        string? author = null,
++        string? sortBy = null,
++        bool sortDesc = false)
++    {
++        if (pageNumber < 1) pageNumber = 1;
++        if (pageSize < 1 || pageSize > 100) pageSize = 10; // как в spBooksGetListV2
++
++        var query = ApplyFilters(
++            _db.Books.AsNoTracking(), search, genreId, typeId, year, author);
++
++        var totalCount = await query.CountAsync();
++
++        query = ApplySort(query, sortBy, sortDesc);
++
++        var entities = await query
++            .Skip((pageNumber - 1) * pageSize)
++            .Take(pageSize)
++            .ToListAsync();
++
++        var books = entities.Select(ToModel).ToList();
++        await AttachGenresAndTypesAsync(books);
++
++        return (books, totalCount);
++    }
++
++#pragma warning disable CS0618 // SearchAsync помечен [Obsolete] в контракте для обратной совместимости
++    [Obsolete("Оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами.")]
++    public Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10)
++        => GetAllAsync(pageNumber, pageSize, search: searchTerm);
++#pragma warning restore CS0618
++
++    public async Task<List<string>> GetAuthorsAsync() =>
++        await _db.Books.AsNoTracking()
++            .Where(b => b.Author != null && b.Author != "")
++            .Select(b => b.Author)
++            .Distinct()
++            .OrderBy(a => a)
++            .ToListAsync();
++
++    public async Task<List<int>> GetYearsAsync() =>
++        await _db.Books.AsNoTracking()
++            .Select(b => b.PublicationYear)
++            .Distinct()
++            .OrderByDescending(y => y)
++            .ToListAsync();
++
++    // ===== СПРАВОЧНИКИ =====
++
++    public async Task<List<RefItem>> GetPublishersAsync() =>
++        await _db.Publishers.AsNoTracking()
++            .OrderBy(p => p.Name)
++            .Select(p => new RefItem { Id = p.Id, Name = p.Name })
++            .ToListAsync();
++
++    public async Task<List<RefItem>> GetGenresAsync() =>
++        await _db.Genres.AsNoTracking()
++            .OrderBy(g => g.Name)
++            .Select(g => new RefItem { Id = g.Id, Name = g.Name })
++            .ToListAsync();
++
++    public async Task<List<RefItem>> GetBookTypesAsync() =>
++        await _db.BookTypes.AsNoTracking()
++            .OrderBy(t => t.Name)
++            .Select(t => new RefItem { Id = t.Id, Name = t.Name })
++            .ToListAsync();
++
++    public async Task<(List<string> Genres, List<string> BookTypes)> GetBookExtraNamesAsync(int bookId)
++    {
++        var genres = await _db.BookGenres.AsNoTracking()
++            .Where(x => x.BookId == bookId)
++            .Select(x => x.Genre!.Name)
++            .OrderBy(n => n)
++            .ToListAsync();
++
++        var types = await _db.BookTypeLinks.AsNoTracking()
++            .Where(x => x.BookId == bookId)
++            .Select(x => x.Type!.Name)
++            .OrderBy(n => n)
++            .ToListAsync();
++
++        return (genres, types);
++    }
++
++    // ===== ЗАПИСЬ =====
++
++    public async Task<(OperationCode Code, int NewId)> CreateAsync(Book book, List<Chapter> chapters)
++    {
++        var entity = new BookEntity
++        {
++            Title = book.Title,
++            Author = book.Author,
++            PublicationYear = book.PublicationYear,
++            Isbn = book.Isbn,
++            Publisher = book.Publisher,
++            Description = book.Description,
++            CountPages = book.CountPages,
++            ContentsXmlRaw = ContentsXmlConverter.ToXml(chapters),
++        };
++
++        var now = DateTime.UtcNow;
++        entity.CreatedAt = now;
++        entity.UpdatedAt = now;
++
++        _db.Books.Add(entity);
++        try
++        {
++            await _db.SaveChangesAsync();
++        }
++        catch (DbUpdateException ex) when (EfErrorMapper.IsDuplicateKey(ex))
++        {
++            _db.ChangeTracker.Clear(); // эквивалент CATCH 2627/2601 в spBooksCreate
++            return (OperationCode.Duplicate, 0);
++        }
++
++        return (OperationCode.Success, entity.Id);
++    }
++
++    public async Task<OperationCode> UpdateAsync(Book book, List<Chapter> chapters)
++    {
++        var entity = await _db.Books.FirstOrDefaultAsync(b => b.Id == book.Id);
++        if (entity is null)
++            return OperationCode.NotFound; // @@ROWCOUNT = 0 в spBooksUpdate
++
++        entity.Title = book.Title;
++        entity.Author = book.Author;
++        entity.PublicationYear = book.PublicationYear;
++        entity.Isbn = book.Isbn;
++        entity.Publisher = book.Publisher;
++        entity.Description = book.Description;
++        entity.CountPages = book.CountPages;
++        entity.ContentsXmlRaw = ContentsXmlConverter.ToXml(chapters);
++        entity.UpdatedAt = DateTime.UtcNow;
++
++        try
++        {
++            await _db.SaveChangesAsync();
++        }
++        catch (DbUpdateException ex) when (EfErrorMapper.IsDuplicateKey(ex))
++        {
++            return OperationCode.Duplicate;
++        }
++
++        return OperationCode.Success;
++    }
++
++    public async Task<OperationCode> DeleteAsync(int id)
++    {
++        try
++        {
++            // set-based удаление без загрузки графа; join-строки TblBookGenres/TblBookTypes
++            // снимаются FK ON DELETE CASCADE на стороне БД
++            var rows = await _db.Books.Where(b => b.Id == id).ExecuteDeleteAsync();
++            return rows == 0 ? OperationCode.NotFound : OperationCode.Success;
++        }
++        catch (DbUpdateException ex) when (EfErrorMapper.IsForeignKeyViolation(ex))
++        {
++            // эквивалент CATCH 547 в spBooksDelete → Duplicate («на книгу есть ссылки»)
++            return OperationCode.Duplicate;
++        }
++    }
++
++    /// <summary>
++    /// Замена наборов жанров/типов и доводка справочника издательств одним SaveChanges
++    /// (в транзакции) вместо текущего DELETE + N×INSERT без явной транзакции.
++    /// </summary>
++    public async Task SaveBookExtrasAsync(int bookId, string? publisherName, List<int> genreIds, List<int> bookTypeIds)
++    {
++        var entity = await _db.Books
++            .Include(b => b.GenreLinks)
++            .Include(b => b.TypeLinks)
++            .FirstOrDefaultAsync(b => b.Id == bookId);
++
++        if (entity is null)
++            return; // книга удалена конкурентно — молча выходим, как старый код после успешного кода операции
++
++        // Издательство: если ввели название, которого нет в справочнике — добавляем.
++        var trimmed = publisherName?.Trim();
++        if (!string.IsNullOrWhiteSpace(trimmed))
++        {
++            var exists = await _db.Publishers.AnyAsync(p => p.Name == trimmed);
++            if (!exists)
++                _db.Publishers.Add(new PublisherEntity { Name = trimmed });
++        }
++
++        ReplaceLinks(entity, genreIds ?? new List<int>());
++        ReplaceTypeLinks(entity, bookTypeIds ?? new List<int>());
++
++        try
++        {
++            await _db.SaveChangesAsync();
++        }
++        catch (DbUpdateException ex) when (EfErrorMapper.IsDuplicateKey(ex))
++        {
++            // гонка при вставке имени издателя в unique UX_TblPublishers_Name — не критично
++            _db.ChangeTracker.Clear();
++        }
++    }
++
++    // ===== СТАТИСТИКА =====
++
++    public async Task<AboutStats> GetAboutStatsAsync()
++    {
++        var since = DateTime.UtcNow.AddHours(-24); // CreatedAt заполняется sysutcdatetime() — UTC (исправлен баг DateTime.Now)
++
++        // Один запрос вместо трёх round-trip
++        var stats = await _db.Books.AsNoTracking()
++            .GroupBy(b => 1)
++            .Select(g => new
++            {
++                TotalBooks = g.Count(),
++                BooksLast24h = g.Count(b => b.CreatedAt >= since),
++                TotalPages = g.Sum(b => (int?)b.CountPages) ?? 0
++            })
++            .FirstOrDefaultAsync();
++
++        if (stats is null)
++            return new AboutStats(0, 0, 0);
++
++        return new AboutStats(stats.TotalBooks, stats.BooksLast24h, stats.TotalPages);
++    }
++
++    // ===== ВСПОМОГАТЕЛЬНЫЕ =====
++
++    private static IQueryable<BookEntity> ApplyFilters(
++        IQueryable<BookEntity> query,
++        string? search, int? genreId, int? typeId, int? year, string? author)
++    {
++        var s = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
++        if (s != null)
++        {
++            // Эквивалент LIKE N'%@Search%' по названию/автору/ISBN/оглавлению из spBooksGetListV2.
++            // Contains по колонке xml EF translating не может — сравниваем строковое представление XML
++            // (колонка объявлена HasColumnType("xml"), значение читается какnvarchar(MAX)).
++            query = query.Where(b =>
++                EF.Functions.Like(b.Title, $"%{s}%") ||
++                EF.Functions.Like(b.Author, $"%{s}%") ||
++                (b.Isbn != null && EF.Functions.Like(b.Isbn, $"%{s}%")) ||
++                (b.ContentsXmlRaw != null && EF.Functions.Like(b.ContentsXmlRaw, $"%{s}%")));
++        }
++
++        if (genreId.HasValue)
++            query = query.Where(b => b.GenreLinks.Any(x => x.GenreId == genreId.Value));
++
++        if (typeId.HasValue)
++            query = query.Where(b => b.TypeLinks.Any(x => x.TypeId == typeId.Value));
++
++        if (year.HasValue)
++            query = query.Where(b => b.PublicationYear == year.Value);
++
++        if (!string.IsNullOrWhiteSpace(author))
++        {
++            var a = author.Trim();
++            query = query.Where(b => b.Author == a);
++        }
++
++        return query;
++    }
++
++    private static IOrderedQueryable<BookEntity> ApplySort(IQueryable<BookEntity> query, string? sortBy, bool desc)
++    {
++        // whitelist значений, идентичный CASE-сортировке spBooksGetListV2; иначе — по Id
++        var key = string.IsNullOrWhiteSpace(sortBy) ? "id" : sortBy.Trim().ToLowerInvariant();
++
++        IOrderedQueryable<BookEntity> ordered = key switch
++        {
++            "title" => desc ? query.OrderByDescending(b => b.Title) : query.OrderBy(b => b.Title),
++            "author" => desc ? query.OrderByDescending(b => b.Author) : query.OrderBy(b => b.Author),
++            "year" => desc ? query.OrderByDescending(b => b.PublicationYear) : query.OrderBy(b => b.PublicationYear),
++            "pages" => desc ? query.OrderByDescending(b => b.CountPages) : query.OrderBy(b => b.CountPages),
++            _ => desc ? query.OrderByDescending(b => b.Id) : query.OrderBy(b => b.Id),
++        };
++
++        return ordered.ThenBy(b => b.Id); // детерминированная пагинация (как Id ASC в ХП)
++    }
++
++    /// <summary>Пакетная подгрузка названий/ид жанров и типов для списка (один запрос, без раздувания Include).</summary>
++    private async Task AttachGenresAndTypesAsync(List<Book> books)
++    {
++        if (books.Count == 0) return;
++
++        var ids = books.Select(b => b.Id).ToList();
++
++        var genreRows = await _db.BookGenres.AsNoTracking()
++            .Where(x => ids.Contains(x.BookId))
++            .Select(x => new { x.BookId, Name = x.Genre!.Name, x.GenreId })
++            .ToListAsync();
++
++        var typeRows = await _db.BookTypeLinks.AsNoTracking()
++            .Where(x => ids.Contains(x.BookId))
++            .Select(x => new { x.BookId, Name = x.Type!.Name, x.TypeId })
++            .ToListAsync();
++
++        foreach (var book in books)
++        {
++            book.Genres = genreRows.Where(r => r.BookId == book.Id).Select(r => r.Name).OrderBy(n => n).ToList();
++            book.BookTypes = typeRows.Where(r => r.BookId == book.Id).Select(r => r.Name).OrderBy(n => n).ToList();
++            book.GenreIds = genreRows.Where(r => r.BookId == book.Id).Select(r => r.GenreId).OrderBy(i => i).ToList();
++            book.BookTypeIds = typeRows.Where(r => r.BookId == book.Id).Select(r => r.TypeId).OrderBy(i => i).ToList();
++        }
++    }
++
++    private static Book ToModel(BookEntity e) => new()
++    {
++        Id = e.Id,
++        Title = e.Title,
++        Author = e.Author,
++        PublicationYear = e.PublicationYear,
++        Isbn = e.Isbn,
++        Publisher = e.Publisher,
++        Description = e.Description,
++        CountPages = e.CountPages,
++        CreatedAt = e.CreatedAt,
++        UpdatedAt = e.UpdatedAt,
++        GenreIds = e.GenreLinks.Select(l => l.GenreId).OrderBy(i => i).ToList(),
++        BookTypeIds = e.TypeLinks.Select(l => l.TypeId).OrderBy(i => i).ToList(),
++        Genres = e.GenreLinks.Select(l => l.Genre!.Name).OrderBy(n => n).ToList(),
++        BookTypes = e.TypeLinks.Select(l => l.Type!.Name).OrderBy(n => n).ToList(),
++    };
++
++    private void ReplaceLinks(BookEntity entity, List<int> desiredGenreIds)
++    {
++        var desired = desiredGenreIds.Distinct().ToHashSet();
++        var current = entity.GenreLinks.ToList();
++
++        foreach (var link in current.Where(l => !desired.Contains(l.GenreId)))
++            _db.BookGenres.Remove(link);
++
++        foreach (var gid in desired.Where(id => current.All(l => l.GenreId != id)))
++            entity.GenreLinks.Add(new BookGenreLink { BookId = entity.Id, GenreId = gid });
++    }
++
++    private void ReplaceTypeLinks(BookEntity entity, List<int> desiredTypeIds)
++    {
++        var desired = desiredTypeIds.Distinct().ToHashSet();
++        var current = entity.TypeLinks.ToList();
++
++        foreach (var link in current.Where(l => !desired.Contains(l.TypeId)))
++            _db.BookTypeLinks.Remove(link);
++
++        foreach (var tid in desired.Where(id => current.All(l => l.TypeId != id)))
++            entity.TypeLinks.Add(new BookTypeLink { BookId = entity.Id, TypeId = tid });
++    }
++}
+diff --git a/Data/EfErrorMapper.cs b/Data/EfErrorMapper.cs
+new file mode 100644
+index 0000000..6f5c624
+--- /dev/null
++++ b/Data/EfErrorMapper.cs
+@@ -0,0 +1,52 @@
++using System.Text.RegularExpressions;
++using Microsoft.Data.SqlClient;
++using Microsoft.EntityFrameworkCore;
++
++namespace Books.Data;
++
++/// <summary>
++/// Маппер ошибок БД в контракт OperationCode (docs/ORM_MIGRATION_TZ.md, п. 3.4.1).
++/// Воспроизводит поведение TRY/CATCH хранимых процедур spBooksCreate/Update/Delete:
++///   2627/2601 (нарушение уникальности / UX_TblBooks_Isbn) → Duplicate
++///   547       (нарушение FK)                              → Duplicate (контракт spBooksDelete)
++///   прочее                                               → пробрасываем вверх
++/// </summary>
++public static class EfErrorMapper
++{
++    private static readonly Regex DuplicateKeyRegex =
++        new(@"Cannot insert duplicate key|Violation of (UNIQUE|PRIMARY) KEY", RegexOptions.IgnoreCase | RegexOptions.Compiled);
++
++    public static bool IsDuplicateKey(DbUpdateException ex)
++    {
++        if (InnerSqlException(ex) is { } sql)
++            return sql.Number == 2627 || sql.Number == 2601 || DuplicateKeyRegex.IsMatch(sql.Message);
++
++        // SqlException не всегда достижима как тип (например, в тестах/провайдерах-заглушках) —
++        // фолбэк на текстовый маппинг по внутреннему исключению.
++        var inner = ex.InnerException;
++        while (inner != null)
++        {
++            if (inner is not DbUpdateException && IsDuplicateKeyMessage(inner.Message))
++                return true;
++            inner = inner.InnerException;
++        }
++        return false;
++    }
++
++    /// <summary>Regex-часть маппинга «текст ошибки SQL Server → Duplicate» (вынесена для тестов, ТЗ п. 3.4.1).</summary>
++    public static bool IsDuplicateKeyMessage(string message) => DuplicateKeyRegex.IsMatch(message);
++
++    public static bool IsForeignKeyViolation(DbUpdateException ex) =>
++        InnerSqlException(ex)?.Number == 547;
++
++    private static SqlException? InnerSqlException(Exception ex) => ex switch
++    {
++        DbUpdateException dbe => dbe.InnerException switch
++        {
++            SqlException sql => sql,
++            Exception inner => InnerSqlException(inner),
++            _ => null
++        },
++        _ => null
++    };
++}
+diff --git a/Data/Entities.cs b/Data/Entities.cs
+new file mode 100644
+index 0000000..aadde2a
+--- /dev/null
++++ b/Data/Entities.cs
+@@ -0,0 +1,68 @@
++namespace Books.Data;
++
++// EF-сущности, зеркалирующие существующую схему БД books (database-first,
++// без пересоздания таблиц). Отделены от презентационной модели Books.Models.Book,
++// которая остаётся DTO для Razor Pages (см. docs/ORM_MIGRATION_TZ.md, п. 3.1).
++
++/// <summary>Строка dbo.tblBooks.</summary>
++public class BookEntity
++{
++    public int Id { get; set; }
++    public string Title { get; set; } = string.Empty;
++    public string Author { get; set; } = string.Empty;
++    public int PublicationYear { get; set; }
++    public string? Isbn { get; set; }
++    public string? Publisher { get; set; }
++    public string? Description { get; set; }
++    public int CountPages { get; set; }
++
++    /// <summary>Колонка xml dbo.tblBooks.ContentsXml. Главы парсятся ContentsXmlConverter.</summary>
++    public string? ContentsXmlRaw { get; set; }
++
++    public DateTime CreatedAt { get; set; }
++    public DateTime UpdatedAt { get; set; }
++
++    public ICollection<BookGenreLink> GenreLinks { get; set; } = new List<BookGenreLink>();
++    public ICollection<BookTypeLink> TypeLinks { get; set; } = new List<BookTypeLink>();
++}
++
++/// <summary>Строка dbo.TblGenres.</summary>
++public class GenreEntity
++{
++    public int Id { get; set; }
++    public string Name { get; set; } = string.Empty;
++    public ICollection<BookGenreLink> BookLinks { get; set; } = new List<BookGenreLink>();
++}
++
++/// <summary>Строка dbo.TblTypes.</summary>
++public class BookTypeEntity
++{
++    public int Id { get; set; }
++    public string Name { get; set; } = string.Empty;
++    public ICollection<BookTypeLink> BookLinks { get; set; } = new List<BookTypeLink>();
++}
++
++/// <summary>Строка dbo.TblPublishers.</summary>
++public class PublisherEntity
++{
++    public int Id { get; set; }
++    public string Name { get; set; } = string.Empty;
++}
++
++/// <summary>Join-сущность dbo.TblBookGenres (M:N Book↔Genre), составной PK.</summary>
++public class BookGenreLink
++{
++    public int BookId { get; set; }
++    public int GenreId { get; set; }
++    public BookEntity? Book { get; set; }
++    public GenreEntity? Genre { get; set; }
++}
++
++/// <summary>Join-сущность dbo.TblBookTypes (M:N Book↔Type), составной PK.</summary>
++public class BookTypeLink
++{
++    public int BookId { get; set; }
++    public int TypeId { get; set; }
++    public BookEntity? Book { get; set; }
++    public BookTypeEntity? Type { get; set; }
++}
+diff --git a/Data/IBookRepository.cs b/Data/IBookRepository.cs
+new file mode 100644
+index 0000000..c34d8b3
+--- /dev/null
++++ b/Data/IBookRepository.cs
+@@ -0,0 +1,46 @@
++using Books.Models;
++
++namespace Books.Data;
++
++/// <summary>
++/// Контракт доступа к данным. Исторический публичный API репозитория сохранён
++/// без изменений (см. docs/ORM_MIGRATION_TZ.md, п. 2 «В области»), чтобы
++/// Razor Pages не зависели от конкретной реализации (Dapper+ХП или EF Core).
++/// </summary>
++public interface IBookRepository
++{
++    // ===== ЧТЕНИЕ =====
++    Task<(Book? Book, List<Chapter> Chapters)> GetByIdWithChaptersAsync(int id);
++
++    Task<(List<Book> Books, int TotalCount)> GetAllAsync(
++        int pageNumber = 1,
++        int pageSize = 10,
++        string? search = null,
++        int? genreId = null,
++        int? typeId = null,
++        int? year = null,
++        string? author = null,
++        string? sortBy = null,
++        bool sortDesc = false);
++
++    [Obsolete("Оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами.")]
++    Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10);
++
++    Task<List<string>> GetAuthorsAsync();
++    Task<List<int>> GetYearsAsync();
++
++    // ===== СПРАВОЧНИКИ =====
++    Task<List<RefItem>> GetPublishersAsync();
++    Task<List<RefItem>> GetGenresAsync();
++    Task<List<RefItem>> GetBookTypesAsync();
++    Task<(List<string> Genres, List<string> BookTypes)> GetBookExtraNamesAsync(int bookId);
++
++    // ===== ЗАПИСЬ =====
++    Task<(OperationCode Code, int NewId)> CreateAsync(Book book, List<Chapter> chapters);
++    Task<OperationCode> UpdateAsync(Book book, List<Chapter> chapters);
++    Task<OperationCode> DeleteAsync(int id);
++    Task SaveBookExtrasAsync(int bookId, string? publisherName, List<int> genreIds, List<int> bookTypeIds);
++
++    // ===== СТАТИСТИКА =====
++    Task<AboutStats> GetAboutStatsAsync();
++}
+diff --git a/Migrations/20261005074742_InitialBooksSchema.Designer.cs b/Migrations/20261005074742_InitialBooksSchema.Designer.cs
+new file mode 100644
+index 0000000..c85b51f
+--- /dev/null
++++ b/Migrations/20261005074742_InitialBooksSchema.Designer.cs
+@@ -0,0 +1,245 @@
++﻿// <auto-generated />
++using System;
++using Books.Data;
++using Microsoft.EntityFrameworkCore;
++using Microsoft.EntityFrameworkCore.Infrastructure;
++using Microsoft.EntityFrameworkCore.Metadata;
++using Microsoft.EntityFrameworkCore.Migrations;
++using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
++
++#nullable disable
++
++namespace Books.Migrations
++{
++    [DbContext(typeof(BookLibraryContext))]
++    [Migration("20261005074742_InitialBooksSchema")]
++    partial class InitialBooksSchema
++    {
++        /// <inheritdoc />
++        protected override void BuildTargetModel(ModelBuilder modelBuilder)
++        {
++#pragma warning disable 612, 618
++            modelBuilder
++                .HasAnnotation("ProductVersion", "8.0.20")
++                .HasAnnotation("Relational:MaxIdentifierLength", 128);
++
++            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
++
++            modelBuilder.Entity("Books.Data.BookEntity", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Author")
++                        .IsRequired()
++                        .HasMaxLength(250)
++                        .HasColumnType("nvarchar(250)");
++
++                    b.Property<string>("ContentsXmlRaw")
++                        .IsRequired()
++                        .HasColumnType("xml")
++                        .HasColumnName("ContentsXml");
++
++                    b.Property<int>("CountPages")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime>("CreatedAt")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("datetime2")
++                        .HasDefaultValueSql("sysutcdatetime()");
++
++                    b.Property<string>("Description")
++                        .HasMaxLength(4000)
++                        .HasColumnType("nvarchar(4000)");
++
++                    b.Property<string>("Isbn")
++                        .HasMaxLength(20)
++                        .HasColumnType("nvarchar(20)");
++
++                    b.Property<int>("PublicationYear")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Publisher")
++                        .HasMaxLength(250)
++                        .HasColumnType("nvarchar(250)");
++
++                    b.Property<string>("Title")
++                        .IsRequired()
++                        .HasMaxLength(300)
++                        .HasColumnType("nvarchar(300)");
++
++                    b.Property<DateTime>("UpdatedAt")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("datetime2")
++                        .HasDefaultValueSql("sysutcdatetime()");
++
++                    b.HasKey("Id");
++
++                    b.HasIndex("Isbn")
++                        .IsUnique()
++                        .HasDatabaseName("UX_TblBooks_Isbn")
++                        .HasFilter("[Isbn] IS NOT NULL");
++
++                    b.HasIndex("Title", "Author")
++                        .HasDatabaseName("IX_Books_Title_Author");
++
++                    b.ToTable("tblBooks", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.BookGenreLink", b =>
++                {
++                    b.Property<int>("BookId")
++                        .HasColumnType("int");
++
++                    b.Property<int>("GenreId")
++                        .HasColumnType("int");
++
++                    b.HasKey("BookId", "GenreId");
++
++                    b.HasIndex("GenreId");
++
++                    b.ToTable("TblBookGenres", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.BookTypeEntity", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Name")
++                        .IsRequired()
++                        .HasMaxLength(100)
++                        .HasColumnType("nvarchar(100)");
++
++                    b.HasKey("Id");
++
++                    b.HasIndex("Name")
++                        .IsUnique()
++                        .HasDatabaseName("UX_TblTypes_Name");
++
++                    b.ToTable("TblTypes", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.BookTypeLink", b =>
++                {
++                    b.Property<int>("BookId")
++                        .HasColumnType("int");
++
++                    b.Property<int>("TypeId")
++                        .HasColumnType("int");
++
++                    b.HasKey("BookId", "TypeId");
++
++                    b.HasIndex("TypeId");
++
++                    b.ToTable("TblBookTypes", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.GenreEntity", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Name")
++                        .IsRequired()
++                        .HasMaxLength(100)
++                        .HasColumnType("nvarchar(100)");
++
++                    b.HasKey("Id");
++
++                    b.HasIndex("Name")
++                        .IsUnique()
++                        .HasDatabaseName("UX_TblGenres_Name");
++
++                    b.ToTable("TblGenres", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.PublisherEntity", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Name")
++                        .IsRequired()
++                        .HasMaxLength(200)
++                        .HasColumnType("nvarchar(200)");
++
++                    b.HasKey("Id");
++
++                    b.HasIndex("Name")
++                        .IsUnique()
++                        .HasDatabaseName("UX_TblPublishers_Name");
++
++                    b.ToTable("TblPublishers", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.BookGenreLink", b =>
++                {
++                    b.HasOne("Books.Data.BookEntity", "Book")
++                        .WithMany("GenreLinks")
++                        .HasForeignKey("BookId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired();
++
++                    b.HasOne("Books.Data.GenreEntity", "Genre")
++                        .WithMany("BookLinks")
++                        .HasForeignKey("GenreId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired();
++
++                    b.Navigation("Book");
++
++                    b.Navigation("Genre");
++                });
++
++            modelBuilder.Entity("Books.Data.BookTypeLink", b =>
++                {
++                    b.HasOne("Books.Data.BookEntity", "Book")
++                        .WithMany("TypeLinks")
++                        .HasForeignKey("BookId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired();
++
++                    b.HasOne("Books.Data.BookTypeEntity", "Type")
++                        .WithMany("BookLinks")
++                        .HasForeignKey("TypeId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired();
++
++                    b.Navigation("Book");
++
++                    b.Navigation("Type");
++                });
++
++            modelBuilder.Entity("Books.Data.BookEntity", b =>
++                {
++                    b.Navigation("GenreLinks");
++
++                    b.Navigation("TypeLinks");
++                });
++
++            modelBuilder.Entity("Books.Data.BookTypeEntity", b =>
++                {
++                    b.Navigation("BookLinks");
++                });
++
++            modelBuilder.Entity("Books.Data.GenreEntity", b =>
++                {
++                    b.Navigation("BookLinks");
++                });
++#pragma warning restore 612, 618
++        }
++    }
++}
+diff --git a/Migrations/20261005074742_InitialBooksSchema.cs b/Migrations/20261005074742_InitialBooksSchema.cs
+new file mode 100644
+index 0000000..7eae1fe
+--- /dev/null
++++ b/Migrations/20261005074742_InitialBooksSchema.cs
+@@ -0,0 +1,186 @@
++﻿using System;
++using Microsoft.EntityFrameworkCore.Migrations;
++
++#nullable disable
++
++namespace Books.Migrations
++{
++    /// <inheritdoc />
++    public partial class InitialBooksSchema : Migration
++    {
++        /// <inheritdoc />
++        protected override void Up(MigrationBuilder migrationBuilder)
++        {
++            migrationBuilder.CreateTable(
++                name: "tblBooks",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
++                    Author = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
++                    PublicationYear = table.Column<int>(type: "int", nullable: false),
++                    Isbn = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
++                    Publisher = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: true),
++                    Description = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
++                    CountPages = table.Column<int>(type: "int", nullable: false),
++                    ContentsXml = table.Column<string>(type: "xml", nullable: false),
++                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "sysutcdatetime()"),
++                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "sysutcdatetime()")
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_tblBooks", x => x.Id);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "TblGenres",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_TblGenres", x => x.Id);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "TblPublishers",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_TblPublishers", x => x.Id);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "TblTypes",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_TblTypes", x => x.Id);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "TblBookGenres",
++                columns: table => new
++                {
++                    BookId = table.Column<int>(type: "int", nullable: false),
++                    GenreId = table.Column<int>(type: "int", nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_TblBookGenres", x => new { x.BookId, x.GenreId });
++                    table.ForeignKey(
++                        name: "FK_TblBookGenres_TblGenres_GenreId",
++                        column: x => x.GenreId,
++                        principalTable: "TblGenres",
++                        principalColumn: "Id",
++                        onDelete: ReferentialAction.Cascade);
++                    table.ForeignKey(
++                        name: "FK_TblBookGenres_tblBooks_BookId",
++                        column: x => x.BookId,
++                        principalTable: "tblBooks",
++                        principalColumn: "Id",
++                        onDelete: ReferentialAction.Cascade);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "TblBookTypes",
++                columns: table => new
++                {
++                    BookId = table.Column<int>(type: "int", nullable: false),
++                    TypeId = table.Column<int>(type: "int", nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_TblBookTypes", x => new { x.BookId, x.TypeId });
++                    table.ForeignKey(
++                        name: "FK_TblBookTypes_TblTypes_TypeId",
++                        column: x => x.TypeId,
++                        principalTable: "TblTypes",
++                        principalColumn: "Id",
++                        onDelete: ReferentialAction.Cascade);
++                    table.ForeignKey(
++                        name: "FK_TblBookTypes_tblBooks_BookId",
++                        column: x => x.BookId,
++                        principalTable: "tblBooks",
++                        principalColumn: "Id",
++                        onDelete: ReferentialAction.Cascade);
++                });
++
++            migrationBuilder.CreateIndex(
++                name: "IX_TblBookGenres_GenreId",
++                table: "TblBookGenres",
++                column: "GenreId");
++
++            migrationBuilder.CreateIndex(
++                name: "IX_Books_Title_Author",
++                table: "tblBooks",
++                columns: new[] { "Title", "Author" });
++
++            migrationBuilder.CreateIndex(
++                name: "UX_TblBooks_Isbn",
++                table: "tblBooks",
++                column: "Isbn",
++                unique: true,
++                filter: "[Isbn] IS NOT NULL");
++
++            migrationBuilder.CreateIndex(
++                name: "IX_TblBookTypes_TypeId",
++                table: "TblBookTypes",
++                column: "TypeId");
++
++            migrationBuilder.CreateIndex(
++                name: "UX_TblGenres_Name",
++                table: "TblGenres",
++                column: "Name",
++                unique: true);
++
++            migrationBuilder.CreateIndex(
++                name: "UX_TblPublishers_Name",
++                table: "TblPublishers",
++                column: "Name",
++                unique: true);
++
++            migrationBuilder.CreateIndex(
++                name: "UX_TblTypes_Name",
++                table: "TblTypes",
++                column: "Name",
++                unique: true);
++        }
++
++        /// <inheritdoc />
++        protected override void Down(MigrationBuilder migrationBuilder)
++        {
++            migrationBuilder.DropTable(
++                name: "TblBookGenres");
++
++            migrationBuilder.DropTable(
++                name: "TblBookTypes");
++
++            migrationBuilder.DropTable(
++                name: "TblPublishers");
++
++            migrationBuilder.DropTable(
++                name: "TblGenres");
++
++            migrationBuilder.DropTable(
++                name: "TblTypes");
++
++            migrationBuilder.DropTable(
++                name: "tblBooks");
++        }
++    }
++}
+diff --git a/Migrations/BookLibraryContextModelSnapshot.cs b/Migrations/BookLibraryContextModelSnapshot.cs
+new file mode 100644
+index 0000000..36a886a
+--- /dev/null
++++ b/Migrations/BookLibraryContextModelSnapshot.cs
+@@ -0,0 +1,242 @@
++﻿// <auto-generated />
++using System;
++using Books.Data;
++using Microsoft.EntityFrameworkCore;
++using Microsoft.EntityFrameworkCore.Infrastructure;
++using Microsoft.EntityFrameworkCore.Metadata;
++using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
++
++#nullable disable
++
++namespace Books.Migrations
++{
++    [DbContext(typeof(BookLibraryContext))]
++    partial class BookLibraryContextModelSnapshot : ModelSnapshot
++    {
++        protected override void BuildModel(ModelBuilder modelBuilder)
++        {
++#pragma warning disable 612, 618
++            modelBuilder
++                .HasAnnotation("ProductVersion", "8.0.20")
++                .HasAnnotation("Relational:MaxIdentifierLength", 128);
++
++            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
++
++            modelBuilder.Entity("Books.Data.BookEntity", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Author")
++                        .IsRequired()
++                        .HasMaxLength(250)
++                        .HasColumnType("nvarchar(250)");
++
++                    b.Property<string>("ContentsXmlRaw")
++                        .IsRequired()
++                        .HasColumnType("xml")
++                        .HasColumnName("ContentsXml");
++
++                    b.Property<int>("CountPages")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime>("CreatedAt")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("datetime2")
++                        .HasDefaultValueSql("sysutcdatetime()");
++
++                    b.Property<string>("Description")
++                        .HasMaxLength(4000)
++                        .HasColumnType("nvarchar(4000)");
++
++                    b.Property<string>("Isbn")
++                        .HasMaxLength(20)
++                        .HasColumnType("nvarchar(20)");
++
++                    b.Property<int>("PublicationYear")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Publisher")
++                        .HasMaxLength(250)
++                        .HasColumnType("nvarchar(250)");
++
++                    b.Property<string>("Title")
++                        .IsRequired()
++                        .HasMaxLength(300)
++                        .HasColumnType("nvarchar(300)");
++
++                    b.Property<DateTime>("UpdatedAt")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("datetime2")
++                        .HasDefaultValueSql("sysutcdatetime()");
++
++                    b.HasKey("Id");
++
++                    b.HasIndex("Isbn")
++                        .IsUnique()
++                        .HasDatabaseName("UX_TblBooks_Isbn")
++                        .HasFilter("[Isbn] IS NOT NULL");
++
++                    b.HasIndex("Title", "Author")
++                        .HasDatabaseName("IX_Books_Title_Author");
++
++                    b.ToTable("tblBooks", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.BookGenreLink", b =>
++                {
++                    b.Property<int>("BookId")
++                        .HasColumnType("int");
++
++                    b.Property<int>("GenreId")
++                        .HasColumnType("int");
++
++                    b.HasKey("BookId", "GenreId");
++
++                    b.HasIndex("GenreId");
++
++                    b.ToTable("TblBookGenres", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.BookTypeEntity", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Name")
++                        .IsRequired()
++                        .HasMaxLength(100)
++                        .HasColumnType("nvarchar(100)");
++
++                    b.HasKey("Id");
++
++                    b.HasIndex("Name")
++                        .IsUnique()
++                        .HasDatabaseName("UX_TblTypes_Name");
++
++                    b.ToTable("TblTypes", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.BookTypeLink", b =>
++                {
++                    b.Property<int>("BookId")
++                        .HasColumnType("int");
++
++                    b.Property<int>("TypeId")
++                        .HasColumnType("int");
++
++                    b.HasKey("BookId", "TypeId");
++
++                    b.HasIndex("TypeId");
++
++                    b.ToTable("TblBookTypes", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.GenreEntity", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Name")
++                        .IsRequired()
++                        .HasMaxLength(100)
++                        .HasColumnType("nvarchar(100)");
++
++                    b.HasKey("Id");
++
++                    b.HasIndex("Name")
++                        .IsUnique()
++                        .HasDatabaseName("UX_TblGenres_Name");
++
++                    b.ToTable("TblGenres", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.PublisherEntity", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Name")
++                        .IsRequired()
++                        .HasMaxLength(200)
++                        .HasColumnType("nvarchar(200)");
++
++                    b.HasKey("Id");
++
++                    b.HasIndex("Name")
++                        .IsUnique()
++                        .HasDatabaseName("UX_TblPublishers_Name");
++
++                    b.ToTable("TblPublishers", (string)null);
++                });
++
++            modelBuilder.Entity("Books.Data.BookGenreLink", b =>
++                {
++                    b.HasOne("Books.Data.BookEntity", "Book")
++                        .WithMany("GenreLinks")
++                        .HasForeignKey("BookId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired();
++
++                    b.HasOne("Books.Data.GenreEntity", "Genre")
++                        .WithMany("BookLinks")
++                        .HasForeignKey("GenreId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired();
++
++                    b.Navigation("Book");
++
++                    b.Navigation("Genre");
++                });
++
++            modelBuilder.Entity("Books.Data.BookTypeLink", b =>
++                {
++                    b.HasOne("Books.Data.BookEntity", "Book")
++                        .WithMany("TypeLinks")
++                        .HasForeignKey("BookId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired();
++
++                    b.HasOne("Books.Data.BookTypeEntity", "Type")
++                        .WithMany("BookLinks")
++                        .HasForeignKey("TypeId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired();
++
++                    b.Navigation("Book");
++
++                    b.Navigation("Type");
++                });
++
++            modelBuilder.Entity("Books.Data.BookEntity", b =>
++                {
++                    b.Navigation("GenreLinks");
++
++                    b.Navigation("TypeLinks");
++                });
++
++            modelBuilder.Entity("Books.Data.BookTypeEntity", b =>
++                {
++                    b.Navigation("BookLinks");
++                });
++
++            modelBuilder.Entity("Books.Data.GenreEntity", b =>
++                {
++                    b.Navigation("BookLinks");
++                });
++#pragma warning restore 612, 618
++        }
++    }
++}
+diff --git a/Pages/About.cshtml.cs b/Pages/About.cshtml.cs
+index 8e850ed..541755f 100644
+--- a/Pages/About.cshtml.cs
++++ b/Pages/About.cshtml.cs
+@@ -12,9 +12,9 @@ public class AboutModel : PageModel
+     private const double PageWeightG = 2;         // вес одной страницы (65 г/м², формат 60x90/16)
+     private const double CoverWeightG = 150;      // крышки + клей на одну книгу
+ 
+-    private readonly BookRepository _repo;
++    private readonly IBookRepository _repo;
+ 
+-    public AboutModel(BookRepository repo)
++    public AboutModel(IBookRepository repo)
+     {
+         _repo = repo;
+     }
+diff --git a/Pages/Books/Create.cshtml.cs b/Pages/Books/Create.cshtml.cs
+index 2a74062..eb4597c 100644
+--- a/Pages/Books/Create.cshtml.cs
++++ b/Pages/Books/Create.cshtml.cs
+@@ -9,9 +9,9 @@ public class CreateModel : PageModel
+ 
+ 
+ {
+-    private readonly BookRepository _repo;
++    private readonly IBookRepository _repo;
+ 
+-    public CreateModel(BookRepository repo)
++    public CreateModel(IBookRepository repo)
+     {
+         _repo = repo;
+     }
+diff --git a/Pages/Books/Delete.cshtml.cs b/Pages/Books/Delete.cshtml.cs
+index d7a0ea0..2975fbd 100644
+--- a/Pages/Books/Delete.cshtml.cs
++++ b/Pages/Books/Delete.cshtml.cs
+@@ -7,9 +7,9 @@ namespace Books.Pages.Books;
+ 
+ public class DeleteModel : PageModel
+ {
+-    private readonly BookRepository _repo;
++    private readonly IBookRepository _repo;
+ 
+-    public DeleteModel(BookRepository repo)
++    public DeleteModel(IBookRepository repo)
+     {
+         _repo = repo;
+     }
+diff --git a/Pages/Books/Details.cshtml.cs b/Pages/Books/Details.cshtml.cs
+index ec3aef0..584a4e3 100644
+--- a/Pages/Books/Details.cshtml.cs
++++ b/Pages/Books/Details.cshtml.cs
+@@ -7,9 +7,9 @@ namespace Books.Pages.Books;
+ 
+ public class DetailsModel : PageModel
+ {
+-    private readonly BookRepository _repo;
++    private readonly IBookRepository _repo;
+ 
+-    public DetailsModel(BookRepository repo)
++    public DetailsModel(IBookRepository repo)
+     {
+         _repo = repo;
+     }
+diff --git a/Pages/Books/Edit.cshtml.cs b/Pages/Books/Edit.cshtml.cs
+index 8d22cb7..661bee8 100644
+--- a/Pages/Books/Edit.cshtml.cs
++++ b/Pages/Books/Edit.cshtml.cs
+@@ -9,12 +9,12 @@ namespace Books.Pages.Books;
+ 
+ public class EditModel : PageModel
+ {
+-    private readonly BookRepository _repo;
++    private readonly IBookRepository _repo;
+     private readonly ILogger<EditModel> _logger;
+     private readonly IBookEditValidator _validator;
+ 
+     public EditModel(
+-        BookRepository repo,
++        IBookRepository repo,
+         ILogger<EditModel> logger,
+         IBookEditValidator validator)
+     {
+diff --git a/Pages/Books/Index.cshtml.cs b/Pages/Books/Index.cshtml.cs
+index e6c19ef..f9ad85f 100644
+--- a/Pages/Books/Index.cshtml.cs
++++ b/Pages/Books/Index.cshtml.cs
+@@ -7,9 +7,9 @@ namespace Books.Pages.Books;
+ 
+ public class IndexModel : PageModel
+ {
+-    private readonly BookRepository _repo;
++    private readonly IBookRepository _repo;
+ 
+-    public IndexModel(BookRepository repo)
++    public IndexModel(IBookRepository repo)
+     {
+         _repo = repo;
+     }
+diff --git a/Program.cs b/Program.cs
+index 411a431..c8f998f 100644
+--- a/Program.cs
++++ b/Program.cs
+@@ -1,4 +1,5 @@
+ using Books.Data;
++using Microsoft.EntityFrameworkCore;
+ using Books.Infrastructure;
+ using Books.Validation;
+ using Serilog;
+@@ -19,11 +20,27 @@ builder.Host.UseSerilog((context, configuration) => configuration
+     .WriteTo.Console()
+     .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day));
+ 
+-// Регистрация репозитория
++// Регистрация доступа к данным.
++// Feature-flag "Data:UseEfRepository" (docs/ORM_MIGRATION_TZ.md, п. 7 «Откат»):
++//   true  — EF Core (EfBookRepository + BookLibraryContext);
++//   false — legacy Dapper+ХП (BookRepository), чтобы откатываться без деплоя кода.
+ var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+-builder.Services.AddSingleton(connectionString);
+-builder.Services.AddScoped<BookRepository>();
++
++var useEf = builder.Configuration.GetValue<bool>("Data:UseEfRepository");
++
++if (useEf)
++{
++    builder.Services.AddDbContextPool<BookLibraryContext>(options =>
++        options.UseSqlServer(connectionString));
++    builder.Services.AddScoped<IBookRepository, EfBookRepository>();
++}
++else
++{
++    builder.Services.AddSingleton(connectionString);
++    builder.Services.AddScoped<BookRepository>();
++    builder.Services.AddScoped<IBookRepository>(sp => sp.GetRequiredService<BookRepository>());
++}
+ 
+ // Razor Pages
+ builder.Services.AddRazorPages();
+diff --git a/appsettings.json b/appsettings.json
+index 742ee35..f22f880 100644
+--- a/appsettings.json
++++ b/appsettings.json
+@@ -5,18 +5,17 @@
+       "Microsoft.AspNetCore": "Warning"
+     }
+   },
+-
+   "Serilog": {
+     "Mode": "All"
+   },
+-
+   "AllowedHosts": "*",
+-
+   "ConnectionStrings": {
+     "DefaultConnection": "Server=WIN-MJ28NJOK5GH;Database=Books;Trusted_Connection=True;TrustServerCertificate=True;"
+   },
+-
+   "Validation": {
+     "IsbnChecksumEnabled": false
++  },
++  "Data": {
++    "UseEfRepository": true
+   }
+-}
++}
+\ No newline at end of file
+diff --git a/sql/Migrations_InitialBooksSchema.sql b/sql/Migrations_InitialBooksSchema.sql
+new file mode 100644
+index 0000000..17cc022
+--- /dev/null
++++ b/sql/Migrations_InitialBooksSchema.sql
+@@ -0,0 +1,180 @@
++﻿IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
++BEGIN
++    CREATE TABLE [__EFMigrationsHistory] (
++        [MigrationId] nvarchar(150) NOT NULL,
++        [ProductVersion] nvarchar(32) NOT NULL,
++        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
++    );
++END;
++GO
++
++BEGIN TRANSACTION;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE TABLE [tblBooks] (
++        [Id] int NOT NULL IDENTITY,
++        [Title] nvarchar(300) NOT NULL,
++        [Author] nvarchar(250) NOT NULL,
++        [PublicationYear] int NOT NULL,
++        [Isbn] nvarchar(20) NULL,
++        [Publisher] nvarchar(250) NULL,
++        [Description] nvarchar(4000) NULL,
++        [CountPages] int NOT NULL,
++        [ContentsXml] xml NOT NULL,
++        [CreatedAt] datetime2 NOT NULL DEFAULT (sysutcdatetime()),
++        [UpdatedAt] datetime2 NOT NULL DEFAULT (sysutcdatetime()),
++        CONSTRAINT [PK_tblBooks] PRIMARY KEY ([Id])
++    );
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE TABLE [TblGenres] (
++        [Id] int NOT NULL IDENTITY,
++        [Name] nvarchar(100) NOT NULL,
++        CONSTRAINT [PK_TblGenres] PRIMARY KEY ([Id])
++    );
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE TABLE [TblPublishers] (
++        [Id] int NOT NULL IDENTITY,
++        [Name] nvarchar(200) NOT NULL,
++        CONSTRAINT [PK_TblPublishers] PRIMARY KEY ([Id])
++    );
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE TABLE [TblTypes] (
++        [Id] int NOT NULL IDENTITY,
++        [Name] nvarchar(100) NOT NULL,
++        CONSTRAINT [PK_TblTypes] PRIMARY KEY ([Id])
++    );
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE TABLE [TblBookGenres] (
++        [BookId] int NOT NULL,
++        [GenreId] int NOT NULL,
++        CONSTRAINT [PK_TblBookGenres] PRIMARY KEY ([BookId], [GenreId]),
++        CONSTRAINT [FK_TblBookGenres_TblGenres_GenreId] FOREIGN KEY ([GenreId]) REFERENCES [TblGenres] ([Id]) ON DELETE CASCADE,
++        CONSTRAINT [FK_TblBookGenres_tblBooks_BookId] FOREIGN KEY ([BookId]) REFERENCES [tblBooks] ([Id]) ON DELETE CASCADE
++    );
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE TABLE [TblBookTypes] (
++        [BookId] int NOT NULL,
++        [TypeId] int NOT NULL,
++        CONSTRAINT [PK_TblBookTypes] PRIMARY KEY ([BookId], [TypeId]),
++        CONSTRAINT [FK_TblBookTypes_TblTypes_TypeId] FOREIGN KEY ([TypeId]) REFERENCES [TblTypes] ([Id]) ON DELETE CASCADE,
++        CONSTRAINT [FK_TblBookTypes_tblBooks_BookId] FOREIGN KEY ([BookId]) REFERENCES [tblBooks] ([Id]) ON DELETE CASCADE
++    );
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE INDEX [IX_TblBookGenres_GenreId] ON [TblBookGenres] ([GenreId]);
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE INDEX [IX_Books_Title_Author] ON [tblBooks] ([Title], [Author]);
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    EXEC(N'CREATE UNIQUE INDEX [UX_TblBooks_Isbn] ON [tblBooks] ([Isbn]) WHERE [Isbn] IS NOT NULL');
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE INDEX [IX_TblBookTypes_TypeId] ON [TblBookTypes] ([TypeId]);
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE UNIQUE INDEX [UX_TblGenres_Name] ON [TblGenres] ([Name]);
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE UNIQUE INDEX [UX_TblPublishers_Name] ON [TblPublishers] ([Name]);
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    CREATE UNIQUE INDEX [UX_TblTypes_Name] ON [TblTypes] ([Name]);
++END;
++GO
++
++IF NOT EXISTS (
++    SELECT * FROM [__EFMigrationsHistory]
++    WHERE [MigrationId] = N'20261005074742_InitialBooksSchema'
++)
++BEGIN
++    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
++    VALUES (N'20261005074742_InitialBooksSchema', N'8.0.20');
++END;
++GO
++
++COMMIT;
++GO
++
+-- 
+2.39.5
+

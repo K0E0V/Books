@@ -7,9 +7,9 @@ namespace Books.Pages.Books;
 
 public class DetailsModel : PageModel
 {
-    private readonly BookRepository _repo;
+    private readonly IBookRepository _repo;
 
-    public DetailsModel(BookRepository repo)
+    public DetailsModel(IBookRepository repo)
     {
         _repo = repo;
     }

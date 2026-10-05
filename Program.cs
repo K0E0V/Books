@@ -1,4 +1,5 @@
 using Books.Data;
+using Microsoft.EntityFrameworkCore;
 using Books.Infrastructure;
 using Books.Validation;
 using Serilog;
@@ -19,11 +20,27 @@ builder.Host.UseSerilog((context, configuration) => configuration
     .WriteTo.Console()
     .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day));
 
-// Регистрация репозитория
+// Регистрация доступа к данным.
+// Feature-flag "Data:UseEfRepository" (docs/ORM_MIGRATION_TZ.md, п. 7 «Откат»):
+//   true  — EF Core (EfBookRepository + BookLibraryContext);
+//   false — legacy Dapper+ХП (BookRepository), чтобы откатываться без деплоя кода.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddSingleton(connectionString);
-builder.Services.AddScoped<BookRepository>();
+
+var useEf = builder.Configuration.GetValue<bool>("Data:UseEfRepository");
+
+if (useEf)
+{
+    builder.Services.AddDbContextPool<BookLibraryContext>(options =>
+        options.UseSqlServer(connectionString));
+    builder.Services.AddScoped<IBookRepository, EfBookRepository>();
+}
+else
+{
+    builder.Services.AddSingleton(connectionString);
+    builder.Services.AddScoped<BookRepository>();
+    builder.Services.AddScoped<IBookRepository>(sp => sp.GetRequiredService<BookRepository>());
+}
 
 // Razor Pages
 builder.Services.AddRazorPages();

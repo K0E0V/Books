@@ -1,0 +1,45 @@
+From 07f003c183004310d80d27e4800feeee851eb309 Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Mon, 5 Oct 2026 08:58:00 +0000
+Subject: [PATCH 4/4] =?UTF-8?q?test:=20object=3F[]=20=D0=B2=D0=BC=D0=B5?=
+ =?UTF-8?q?=D1=81=D1=82=D0=BE=20=D0=BF=D1=80=D0=B8=D0=B2=D0=B5=D0=B4=D0=B5?=
+ =?UTF-8?q?=D0=BD=D0=B8=D1=8F=20(Exception=3F)null=20=E2=80=94=20=D1=83?=
+ =?UTF-8?q?=D1=81=D1=82=D1=80=D0=B0=D0=BD=D0=B5=D0=BD=D1=8B=20=D0=BF=D1=80?=
+ =?UTF-8?q?=D0=B5=D0=B4=D1=83=D0=BF=D1=80=D0=B5=D0=B6=D0=B4=D0=B5=D0=BD?=
+ =?UTF-8?q?=D0=B8=D1=8F=20CS8625=20=D0=B2=20reflection-=D1=85=D0=B5=D0=BB?=
+ =?UTF-8?q?=D0=BF=D0=B5=20SqlException?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ Books.Tests/EfErrorMapperTests.cs | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Books.Tests/EfErrorMapperTests.cs b/Books.Tests/EfErrorMapperTests.cs
+index bedc9fb..136b9df 100644
+--- a/Books.Tests/EfErrorMapperTests.cs
++++ b/Books.Tests/EfErrorMapperTests.cs
+@@ -102,8 +102,8 @@ public class EfErrorMapperTests
+                        ps[2].ParameterType == typeof(byte) &&
+                        ps[8].ParameterType == typeof(Exception);
+             });
+-        var error = errorCtor.Invoke(new object[]
+-            { number, (byte)0, (byte)10, "server", message, "procedure", 1, 0, (Exception?)null });
++        var error = errorCtor.Invoke(new object?[]
++            { number, (byte)0, (byte)10, "server", message, "procedure", 1, 0, null });
+ 
+         var collection = (SqlErrorCollection)Activator.CreateInstance(errorsType, nonPublic: true)!;
+         var addMethod = errorsType.GetMethod("Add",
+@@ -117,7 +117,7 @@ public class EfErrorMapperTests
+             new[] { typeof(string), typeof(SqlErrorCollection), typeof(Exception), typeof(Guid) },
+             null);
+         Assert.NotNull(ctorSql);
+-        var sqlEx = (SqlException)ctorSql!.Invoke(new object[] { message, collection, (Exception?)null, Guid.NewGuid() });
++        var sqlEx = (SqlException)ctorSql!.Invoke(new object?[] { message, collection, null, Guid.NewGuid() });
+         Assert.Equal(number, sqlEx.Number); // sanity: номер ошибки действительно прокинулся
+         return sqlEx;
+     }
+-- 
+2.39.5
+

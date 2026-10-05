@@ -7,9 +7,9 @@ namespace Books.Pages.Books;
 
 public class DeleteModel : PageModel
 {
-    private readonly BookRepository _repo;
+    private readonly IBookRepository _repo;
 
-    public DeleteModel(BookRepository repo)
+    public DeleteModel(IBookRepository repo)
     {
         _repo = repo;
     }

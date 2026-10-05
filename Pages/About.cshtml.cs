@@ -12,9 +12,9 @@ public class AboutModel : PageModel
     private const double PageWeightG = 2;         // вес одной страницы (65 г/м², формат 60x90/16)
     private const double CoverWeightG = 150;      // крышки + клей на одну книгу
 
-    private readonly BookRepository _repo;
+    private readonly IBookRepository _repo;
 
-    public AboutModel(BookRepository repo)
+    public AboutModel(IBookRepository repo)
     {
         _repo = repo;
     }

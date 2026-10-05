@@ -9,9 +9,9 @@ public class CreateModel : PageModel
 
 
 {
-    private readonly BookRepository _repo;
+    private readonly IBookRepository _repo;
 
-    public CreateModel(BookRepository repo)
+    public CreateModel(IBookRepository repo)
     {
         _repo = repo;
     }

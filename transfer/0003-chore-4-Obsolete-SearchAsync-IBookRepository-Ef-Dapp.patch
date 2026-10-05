@@ -1,0 +1,244 @@
+From 60075737c7b9997a41240d88db6054a4e04a7e69 Mon Sep 17 00:00:00 2001
+From: "qwen.ai[bot]" <qwenlm-intl@service.alibaba.com>
+Date: Mon, 5 Oct 2026 08:57:29 +0000
+Subject: [PATCH 3/4] =?UTF-8?q?chore(=D0=AD=D1=82=D0=B0=D0=BF=204=20=D0=A2?=
+ =?UTF-8?q?=D0=97):=20=D0=B7=D0=B0=D1=87=D0=B8=D1=81=D1=82=D0=BA=D0=B0=20?=
+ =?UTF-8?q?=E2=80=94=20=D1=83=D0=B4=D0=B0=D0=BB=D1=91=D0=BD=20[Obsolete]?=
+ =?UTF-8?q?=20SearchAsync=20=D0=B8=D0=B7=20IBookRepository/Ef/Dapper-?=
+ =?UTF-8?q?=D1=80=D0=B5=D0=BF=D0=BE=D0=B7=D0=B8=D1=82=D0=BE=D1=80=D0=B8?=
+ =?UTF-8?q?=D1=8F,=20docs/DB=5FSCRIPTS.md=20->=20MIGRATIONS.md=20(=D0=BC?=
+ =?UTF-8?q?=D0=B8=D0=B3=D1=80=D0=B0=D1=86=D0=B8=D0=B8=20+=20=D1=81=D1=82?=
+ =?UTF-8?q?=D0=B0=D1=82=D1=83=D1=81=20deprecated=20=D0=A5=D0=9F),=20README?=
+ =?UTF-8?q?=20=D0=BF=D1=80=D0=BE=D0=B5=D0=BA=D1=82=D0=B0,=20=D1=84=D0=B8?=
+ =?UTF-8?q?=D0=BA=D1=81=20CS8625=20=D0=B2=20=D1=82=D0=B5=D1=81=D1=82=D0=B0?=
+ =?UTF-8?q?=D1=85?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ Books.Tests/EfErrorMapperTests.cs             |  4 +-
+ Data/BookRepository.cs                        | 22 +-------
+ Data/EfBookRepository.cs                      |  6 ---
+ Data/IBookRepository.cs                       |  4 +-
+ README.md                                     | 50 +++++++++++++-----
+ .../{DB_SCRIPTS.md => DB_SCRIPTS.archived.md} |  1 +
+ docs/MIGRATIONS.md                            | 51 +++++++++++++++++++
+ 7 files changed, 96 insertions(+), 42 deletions(-)
+ rename docs/{DB_SCRIPTS.md => DB_SCRIPTS.archived.md} (92%)
+ create mode 100644 docs/MIGRATIONS.md
+
+diff --git a/Books.Tests/EfErrorMapperTests.cs b/Books.Tests/EfErrorMapperTests.cs
+index b40464a..bedc9fb 100644
+--- a/Books.Tests/EfErrorMapperTests.cs
++++ b/Books.Tests/EfErrorMapperTests.cs
+@@ -103,7 +103,7 @@ public class EfErrorMapperTests
+                        ps[8].ParameterType == typeof(Exception);
+             });
+         var error = errorCtor.Invoke(new object[]
+-            { number, (byte)0, (byte)10, "server", message, "procedure", 1, 0, null });
++            { number, (byte)0, (byte)10, "server", message, "procedure", 1, 0, (Exception?)null });
+ 
+         var collection = (SqlErrorCollection)Activator.CreateInstance(errorsType, nonPublic: true)!;
+         var addMethod = errorsType.GetMethod("Add",
+@@ -117,7 +117,7 @@ public class EfErrorMapperTests
+             new[] { typeof(string), typeof(SqlErrorCollection), typeof(Exception), typeof(Guid) },
+             null);
+         Assert.NotNull(ctorSql);
+-        var sqlEx = (SqlException)ctorSql!.Invoke(new object[] { message, collection, null, Guid.NewGuid() });
++        var sqlEx = (SqlException)ctorSql!.Invoke(new object[] { message, collection, (Exception?)null, Guid.NewGuid() });
+         Assert.Equal(number, sqlEx.Number); // sanity: номер ошибки действительно прокинулся
+         return sqlEx;
+     }
+diff --git a/Data/BookRepository.cs b/Data/BookRepository.cs
+index 8a6e8b7..fbe971e 100644
+--- a/Data/BookRepository.cs
++++ b/Data/BookRepository.cs
+@@ -189,26 +189,8 @@ public class BookRepository : IBookRepository
+         return (books, totalCount);
+     }
+ 
+-    // Поиск книг (оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами)
+-    public async Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10)
+-    {
+-        using var connection = new SqlConnection(_connectionString);
+-        var parameters = new { Search = searchTerm, PageNumber = pageNumber, PageSize = pageSize };
+-
+-        using var multi = await connection.QueryMultipleAsync(
+-            "dbo.spBooksSearch",
+-            parameters,
+-            commandType: CommandType.StoredProcedure);
+-
+-        var books = (await multi.ReadAsync<Book>()).ToList();
+-        var totalCount = await multi.ReadFirstAsync<int>();
+-
+-        multi.Dispose(); // закрываем DataReader до следующих запросов на этом соединении
+-
+-        await AttachGenresAndTypesAsync(connection, books);
+-
+-        return (books, totalCount);
+-    }
++    // SearchAsync удалён (Этап 4 ТЗ docs/ORM_MIGRATION_TZ.md): метод не вызывался
++    // ни одной страницей; Index использует GetAllAsync со структурированными фильтрами.
+ 
+     // Список авторов для фильтра (из таблицы книг, без дублей)
+     public async Task<List<string>> GetAuthorsAsync()
+diff --git a/Data/EfBookRepository.cs b/Data/EfBookRepository.cs
+index 59c0b8d..6f59fb5 100644
+--- a/Data/EfBookRepository.cs
++++ b/Data/EfBookRepository.cs
+@@ -69,12 +69,6 @@ public class EfBookRepository : IBookRepository
+         return (books, totalCount);
+     }
+ 
+-#pragma warning disable CS0618 // SearchAsync помечен [Obsolete] в контракте для обратной совместимости
+-    [Obsolete("Оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами.")]
+-    public Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10)
+-        => GetAllAsync(pageNumber, pageSize, search: searchTerm);
+-#pragma warning restore CS0618
+-
+     public async Task<List<string>> GetAuthorsAsync() =>
+         await _db.Books.AsNoTracking()
+             .Where(b => b.Author != null && b.Author != "")
+diff --git a/Data/IBookRepository.cs b/Data/IBookRepository.cs
+index c34d8b3..7ae83a9 100644
+--- a/Data/IBookRepository.cs
++++ b/Data/IBookRepository.cs
+@@ -23,8 +23,8 @@ public interface IBookRepository
+         string? sortBy = null,
+         bool sortDesc = false);
+ 
+-    [Obsolete("Оставлен для обратной совместимости; страница Index использует GetAllAsync с фильтрами.")]
+-    Task<(List<Book> Books, int TotalCount)> SearchAsync(string searchTerm, int pageNumber = 1, int pageSize = 10);
++    // SearchAsync удалён (Этап 4 ТЗ docs/ORM_MIGRATION_TZ.md): ни одна страница
++    // не вызывал метод — Index использует GetAllAsync со структурированными фильтрами.
+ 
+     Task<List<string>> GetAuthorsAsync();
+     Task<List<int>> GetYearsAsync();
+diff --git a/README.md b/README.md
+index a0eb677..8c93349 100644
+--- a/README.md
++++ b/README.md
+@@ -1,12 +1,38 @@
+-5.2	Разработайте простое приложение “Домашняя библиотека”
+-
+-1.	По каждой книге должно храниться; 
+-1.1.	Название
+-1.2.	Автор
+-1.3.	год издания
+-1.4.	оглавление в виде xml поля. Оглавление в виде xml файла.
+-1.5.	Прочие данные, которые Вы посчитаете необходимыми.
+-2.	Создать хранимые процедуры для  insert, update, delete, select …
+-3.	Для управления библиотекой реализовать карточку, список, функции редактирования, создания, изменения, просмотра записей с помощью хранимых процедур.
+-4.	Также в карточке сделать форму для редактирования оглавления в виде HTML редактора (можно найти контрол в интернете), сохранять содержимое в xml поле.
+-5.	Реализовать возможность поиска по оглавлению, названию, автору.
++# Домашняя библиотека (Books)
++
++ASP.NET Core 8 (Razor Pages) + MS SQL Server `books`. Учебный проект 5.2.
++
++## Технологический стек
++- **Доступ к данным: EF Core 8** (`Data/EfBookRepository.cs`, `Data/BookLibraryContext.cs`) — основной режим, feature-flag `Data:UseEfRepository=true` в `appsettings.json`.
++- Legacy Dapper+ХП (`Data/BookRepository.cs`) — режим отката (`UseEfRepository=false`); ХП в статусе deprecated.
++- Главы книг хранятся в XML-колонке `dbo.tblBooks.ContentsXml` (таблица `tblChapters` запрещена ТЗ).
++- Логирование: Serilog (`docs/LOGGING.md`). Схема БД: EF Migrations (`docs/MIGRATIONS.md`).
++
++## Структура
++```
++Data/          IBookRepository, EfBookRepository (EF Core), BookRepository (Dapper-fallback),
++               BookLibraryContext, ContentsXmlConverter, EfErrorMapper
++Domain/        Isbn, PageRange, DomainRuleException
++Models/        Book, Chapter, OperationCode, RefItem, AboutStats
++Pages/Books/   Index (список+фильтры+пагинация), Create, Edit, Details, Delete, About
++Migrations/    InitialBooksSchema
++Books.Tests/   xUnit: конвертер XML + маппер ошибок (16 тестов) + чек-лист ручной верификации
++docs/          ORM_MIGRATION_TZ.md (ТЗ миграции), MIGRATIONS.md, LOGGING.md, DB_SCRIPTS.archived.md
++sql/           замороженные исторические скрипты и тексты ХП
++```
++
++## Запуск
++```bash
++dotnet restore && dotnet build
++dotnet test Books.Tests/Books.Tests.csproj
++dotnet run            # http://localhost:5000 → /Books/Index
++```
++Требуется SQL Server с БД `books` (connection string в `appsettings.json`). Для чистой БД:
++`dotnet ef database update` применит миграцию `InitialBooksSchema`.
++
++## Исходное учебное задание
++1. По каждой книге хранить: название, автор, год издания, оглавление в виде XML-поля, прочие данные.
++2. Создать хранимые процедуры для insert, update, delete, select.
++3. Реализовать карточку, список, формы создания/редактирования/просмотра записей.
++4. В карточке — HTML-редактор оглавления, сохранение содержимого в XML-поле.
++5. Поиск по оглавлению, названию, автору.
+diff --git a/docs/DB_SCRIPTS.md b/docs/DB_SCRIPTS.archived.md
+similarity index 92%
+rename from docs/DB_SCRIPTS.md
+rename to docs/DB_SCRIPTS.archived.md
+index d533428..7b9de31 100644
+--- a/docs/DB_SCRIPTS.md
++++ b/docs/DB_SCRIPTS.archived.md
+@@ -1,3 +1,4 @@
++> ⚠️ **АРХИВ (Этап 4 миграции на EF Core, 2026-10):** управление схемой переведено в EF Core Migrations — см. [MIGRATIONS.md](MIGRATIONS.md). Документ оставлен как история ручных скриптов.
+ # Инструкция: модификация объектов БД (кратко, чтобы не забывать)
+ 
+ База данных: **books**. Все скрипты лежат в папке `sql/` проекта.
+diff --git a/docs/MIGRATIONS.md b/docs/MIGRATIONS.md
+new file mode 100644
+index 0000000..894a607
+--- /dev/null
++++ b/docs/MIGRATIONS.md
+@@ -0,0 +1,51 @@
++# Управление схемой БД: EF Core Migrations
++
++С 2026-10 (ветка `feature/ef-core`, Этап 4 ТЗ `docs/ORM_MIGRATION_TZ.md`) схема БД **books**
++версионируется миграциями EF Core в папке `Migrations/`. Ручные скрипты из `sql/` для изменений
++схемы больше НЕ выполняются — этот документ заменяет `docs/DB_SCRIPTS.md`.
++
++## Основные команды (выполнять из корня проекта)
++
++```bash
++# новая миграция после изменения моделей/контекста
++dotnet ef migrations add ИмяМиграции
++
++# проверить SQL, который будет выполнен (идемпотентность!)
++dotnet ef migrations script --idempotent
++
++# применить к БД (Development — через dotnet ef; Production — только через развёртывание)
++dotnet ef database update
++
++# состояние БД относительно миграций
++SELECT * FROM dbo.__EFMigrationsHistory;
++```
++
++Connection string берётся из `appsettings.json` → `ConnectionStrings:DefaultConnection`
++(см. `Data/DesignTimeDbContextFactory.cs`).
++
++## Текущее состояние
++
++| Миграция | Содержание |
++|---|---|
++| `20261005074742_InitialBooksSchema` | Полная зеркальная схема: tblBooks (колонка ContentsXml типа xml, filtered unique индекс UX_TblBooks_Isbn), TblGenres, TblTypes, TblPublishers, junction-таблицы TblBookGenres/TblBookTypes (составной PK, FK cascade), дефолты CreatedAt/UpdatedAt = sysutcdatetime() |
++
++⚠️ Для существующей БД, созданной скриптами `sql/StructureBD`, миграцию применять НЕ нужно —
++схема уже эквивалентна. Чтобы «привязать» её к истории миграций без пересоздания таблиц:
++
++```bash
++dotnet ef migrations script --idempotent   # сверить diff с реальной БД вручную
++# затем вставить строку в __EFMigrationsHistory (или выполнить Up-скрипт на чистой БД)
++```
++
++## Правила
++
++1. Любое изменение схемы — только новой миграцией; править опубликованные файлы миграций запрещено.
++2. Перед мержем — `dotnet ef migrations script` и ревью SQL.
++3. ХП (`spBooks*`) переведены в статус **deprecated**: не удалять минимум 1 релиз ( Transitional period, п. 7 ТЗ), не изменять их сигнатуры.
++4. Главы хранятся ТОЛЬКО в `dbo.tblBooks.ContentsXml` (тип xml); таблица `tblChapters` запрещена ТЗ.
++5. Папка `sql/` заморожена: остаётся read-only справочником исторических скриптов.
++
++## Откат режима доступа к данным
++
++Если EF-реализация показала дефект в продакшене: `appsettings` → `"Data": { "UseEfRepository": false }`
++возвращает legacy Dapper+ХП репозиторий без пересборки (миграции схемы при этом остаются).
+-- 
+2.39.5
+
